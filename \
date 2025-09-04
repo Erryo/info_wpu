@@ -1,0 +1,57 @@
+from typing import Sequence
+import cv2
+import sys
+
+from cv2.typing import MatLike
+from numpy import integer
+img = cv2.imread("picture.png")
+
+if img is None:
+    sys.exit()
+
+img = cv2.blur(img,(7,7))
+b,g,r = cv2.split(img)
+_, tresh = cv2.threshold(r,25,255,cv2.THRESH_BINARY_INV)
+contours, _ = cv2.findContours(tresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+
+proccesed = list() 
+for i,contour in enumerate(contours):
+    if i == 0:
+        continue
+
+    approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
+    #    cv2.drawContours(img, [contour], 0, (0, 0, 255), 5)
+
+    x,y = 0,0
+    M = cv2.moments(contour)
+    if M['m00'] != 0:
+        x = int(M['m10'] / M['m00'])
+        y = int(M['m01'] / M['m00'])
+
+    # Detect shape
+    sides = len(approx)
+    if sides == 3:
+        label = 'Triangle'
+    elif sides == 4:
+        label = 'Quadrilateral'
+        proccesed.append(contour)
+    elif sides == 5:
+        label = 'Pentagon'
+        cv2.drawContours(img, [contour], 0, (0, 0, 255), 5)
+        cv2.putText(img, label, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    elif sides == 6:
+        label = 'Hexagon'
+    else:
+        label  ='circle'
+    
+    #if sides == 4:
+    #    print("circle")
+    #    cv2.drawContours(img, [contour], 0, (0, 0, 255), 5)
+    #
+
+cv2.imshow("Img",img)
+cv2.imshow("threshold",tresh)
+
+cv2.waitKey(0)
+
