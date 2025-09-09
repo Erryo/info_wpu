@@ -1,9 +1,10 @@
 import pygame as pg
 from djitellopy import tello
 import sys
-import time
+import numpy as np
 import cv2
 
+import imgproc
 
 Should_quit = False
 
@@ -21,7 +22,7 @@ def main():
 
     drone_conn = True
     drone = tello.Tello()
-    try: 
+    try:
         drone.connect()
         drone.streamon()
         drone.takeoff()
@@ -33,30 +34,37 @@ def main():
     font=pg.font.Font(None,20)
     resolution = 960,720
     screen = pg.display.set_mode(resolution)
+
     wincolor = 40, 40, 90
     keys = [False,False,False,False,False,False,False,False,False,False]
+    angle,radius = 0,0
 
     while not Should_quit:
         #time.sleep(0.1)
         screen.fill(wincolor)
 
         vel,keys = do_input(keys)
-        if vel != [0,0,0,0]:
-            print(vel)
         if drone_conn:
             batt = drone.query_battery()
             temp = drone.query_temperature()
-            drone.send_rc_control(vel[0],vel[1],vel[2],vel[3]) 
+            drone.send_rc_control(vel[0],vel[1],vel[2],vel[3])
             frame_read = drone.get_frame_read()
+
             if frame_read.frame is not None:
+                angle,radius = imgproc.get_angle(frame_read.frame)
+
                 frame_rgb = cv2.cvtColor(frame_read.frame, cv2.COLOR_BGR2RGB)
                 frame_rgb = cv2.transpose(frame_rgb)   # optional, Tello feed may be rotated
                 frame_surface = pg.surfarray.make_surface(frame_rgb)
+
                 screen.blit(frame_surface, (0, 0))
-        else: 
+        else:
+            angle,radius = imgproc.get_angle(np.zeros((960,720,3),dtype=np.uint8))
             batt = 10000
             temp = -1000
-        write(screen,f"{batt}%--{temp}*C",(40,40))
+        write(screen,f"Angle:{angle}*   Radius:{radius}px",(0,10))
+        write(screen,f"Batt:{batt}%   T:{temp}*C",(0,40))
+        write(screen,f"Velocity x:{vel[0]} y:{vel[1]} z:{vel[2]} rot:{vel[3]}",(resolution[0]-200,10))
         pg.display.update()
 
     pg.quit()
@@ -105,9 +113,9 @@ def do_input(keys):
                     keys[4] = False
                 if event.key == pg.K_e:
                     keys[5] = False
-                if event.key == pg.K_UP:   
-                    keys[6] = False         
-                if event.key == pg.K_DOWN: 
+                if event.key == pg.K_UP:
+                    keys[6] = False
+                if event.key == pg.K_DOWN:
                     keys[7] = False
     vels = [0,0,0,0]
 
@@ -126,10 +134,10 @@ def do_input(keys):
     if keys[5]:
         vels[3] -= 10
 
-    if keys[6]:       
-        vels[2] += 10 
-    if keys[7]:       
-        vels[2] -= 10 
+    if keys[6]:
+        vels[2] += 10
+    if keys[7]:
+        vels[2] -= 10
 
     return vels,keys
 

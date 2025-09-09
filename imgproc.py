@@ -2,37 +2,31 @@ import cv2
 import sys
 import numpy as np
 import math
-import random
 
 
 def main():
-    
-    #img = cv2.imread("unnamed.png")
-    #img = np.zeros((960,720,3),dtype='uint8')
-    #cv2.rectangle(img,(100,50),(150,100),(128,52,178),thickness=cv2.FILLED)
-    #cv2.rectangle(img,(500,550),(450,510),(128,52,198),thickness=cv2.FILLED)
-
-    #cv2.circle(img,(100,180),radius,(0,0,220),cv2.FILLED)
-
-    z = 54*50  # distance in meters * focal length(mm) 
-
-    #radius = random.randint(5,20)
-    img = cv2.imread("render_x.png")
-    if img is None:
-        return
-    img = resize(img,1)
-    screen_h,screen_w,_ = img.shape
-    print("Img resized",screen_w,screen_h)
-
-    backg = np.copy(img)
-    #c_x = random.randint(0,screen_w-radius)
-    #c_y = random.randint(0,screen_h-radius)
-
-    #cv2.circle(img,(c_x,c_y),radius,(0,0,255),cv2.FILLED)
-    
-    if img is None:
+    img = cv2.imread("render_x.png")       
+    if img is None:                        
         sys.exit()
+    img = np.zeros((960,720,3),dtype=np.uint8)
+    angle,radius = get_angle(img)
+    print(angle,radius)
+
+                                        
+   # cv2.imshow("Img", img)              
+   # cv2.imshow("r_and_nb_ng", only_red) 
+   # cv2.imshow("back", backg)           
+   #                                     
+   # print("Angle:",angle_degs)          
+   # print("Dx,dy:",delta_x,delta_y)     
+                                        
+    cv2.waitKey(0)                      
+
+def get_angle(img):
     
+    z = 54*50  # distance in meters * focal length(mm) 
+    
+    _,screen_w,_ = img.shape        
     img = cv2.GaussianBlur(img, (17, 17), 0)
     b, g, r = cv2.split(img)
     _, r_thresh = cv2.threshold(r, 150, 255, cv2.THRESH_BINARY)
@@ -52,30 +46,18 @@ def main():
     x,y,contour = get_coords(contours)
     if contour is not None:
         cv2.drawContours(img,[contour],0,(0,255,0),2)
+    else:
+        return -255,-255
     print("Contour x,y:",x,y)
     
 
     delta_x = (screen_w//2)-x
-    delta_y = (screen_h//2)-y
 
     angle_rads = math.atan((delta_x/z))
     angle_degs = angle_rads*(180/math.pi)
-    new_x = x+delta_x
-    new_y = y+delta_y
 
     radius = cv2.arcLength(contour,True)/(2*math.pi)
-    print("Radius:",radius)
-
-    cv2.circle(backg,(new_x,new_y),int(radius),(0,0,255),cv2.FILLED)
-    
-    cv2.imshow("Img", img)
-    cv2.imshow("r_and_nb_ng", only_red)
-    cv2.imshow("back", backg)
-
-    print("Angle:",angle_degs)
-    print("Dx,dy:",delta_x,delta_y)
-
-    cv2.waitKey(0)
+    return angle_degs,radius
     
 def get_coords(contours):
     print(len(contours))
