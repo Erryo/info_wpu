@@ -8,19 +8,34 @@ def main():
     img = cv2.imread("render_x.png")       
     if img is None:                        
         sys.exit()
-    img = np.zeros((960,720,3),dtype=np.uint8)
     angle,radius = get_angle(img)
     print(angle,radius)
 
                                         
-   # cv2.imshow("Img", img)              
    # cv2.imshow("r_and_nb_ng", only_red) 
    # cv2.imshow("back", backg)           
    #                                     
    # print("Angle:",angle_degs)          
    # print("Dx,dy:",delta_x,delta_y)     
+
+    
                                         
     cv2.waitKey(0)                      
+
+def filter_col(keep_threshhold,remvo_threshold,ch_keep,ch_rm1,ch_rm2):
+    
+    _, keep_thr_ch = cv2.threshold(ch_keep, keep_threshhold, 255, cv2.THRESH_BINARY) 
+    _, rm_thr_1 = cv2.threshold(ch_rm1, remvo_threshold, 255, cv2.THRESH_BINARY) 
+    _, rm_thr_2 = cv2.threshold(ch_rm2, remvo_threshold, 255, cv2.THRESH_BINARY) 
+                                                                
+                                                                
+    not_b = cv2.bitwise_not(rm_thr_1)                           
+    not_g = cv2.bitwise_not(rm_thr_2)                           
+                                                                
+    r_and_not_b = cv2.bitwise_and(keep_thr_ch, not_b)              
+    r_and_not_g = cv2.bitwise_and(keep_thr_ch, not_g)              
+
+    return cv2.bitwise_and(r_and_not_b, r_and_not_g)
 
 def get_angle(img):
     
@@ -41,6 +56,9 @@ def get_angle(img):
     r_and_not_g = cv2.bitwise_and(r_thresh, not_g)
     
     only_red = cv2.bitwise_and(r_and_not_b, r_and_not_g)
+    cv2.imshow("only_red:",only_red)
+    cv2.imshow("func:",filter_col(150,100,r,g,b))
+    cv2.imshow("roeau",r)
     contours, _ = cv2.findContours(only_red, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
     x,y,contour = get_coords(contours)
