@@ -23,7 +23,7 @@ print(batt)
 for i in range(4): 
     frame = drone.get_frame_read()
     if frame.frame  is not None:
-        cv2.imwrite(f"Drone{i}.png", frame.frame)
+        cv2.imwrite(f"photos/Drone{i}.png", frame.frame)
         cv2.imshow("DroneCapture",frame.frame)
 
 drone.land()
