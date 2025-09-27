@@ -35,7 +35,7 @@ def main():
     try:
         drone.connect()
         drone.streamon()
-        drone.takeoff()
+#        drone.takeoff()
     except:
         drone_conn = False
         print("Error",drone,type(drone))
@@ -50,8 +50,6 @@ def main():
     #keys = [False,False,False,False,False,False,False,False,False,False]
     angle,radius = 0,0
     start_time = time.time()
-    greenLower = (29, 86, 6)                                  
-    greenUpper = (64, 255, 255)                               
 
     while not Should_quit:
         #time.sleep(0.1)
@@ -79,7 +77,9 @@ def main():
                     angle,radius,contour = imgproc.get_angle(r,g,b)
                     # cv2.imwrite("photos/g.png",g)
                     # cv2.imwrite("photos/b.png",b)
-                    mask = cv2.drawContours(img,[contour],0,(0,255,0),2)
+                    img = cv2.drawContours(img,[contour],0,(0,255,0),2)
+
+                    img =imgproc.detect_circle_1(img)
                     #img = imgproc.filter_col(150,100,r,g,b)
                     #img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
 
