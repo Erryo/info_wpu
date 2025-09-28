@@ -15,11 +15,15 @@ if frame is None:
 
 ball_tracker = bt.BallTracker()
 
+#img = cv2.imread("reneder.jpg")
+#if img is None:
+#    sys.exit()
 while rval:
     if frame is None:
         break
-    frame = cv2.flip(frame,1)
-    success, processed_frame, mask = ball_tracker.calculate(frame)
+    img = frame
+    img = cv2.flip(img,1)
+    success, processed_frame, mask = ball_tracker.find(img)
 
     cv2.imshow("Processed Frame", processed_frame)
     cv2.imshow("Mask", mask)

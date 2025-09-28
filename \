@@ -1,0 +1,50 @@
+import raylibpy as rl
+
+
+def main():
+    rl.init_window(1920, 1080, "3D base")
+    
+    # camera 
+    camera = rl.Camera3D()
+    camera.position = rl.Vector3(0,1,15.0)
+    camera.target = rl.Vector3()
+    camera.up = rl.Vector3(0,1,0)
+    camera.fovy = 45.0
+    camera.projection = rl.CAMERA_PERSPECTIVE
+    
+    # models
+    mesh_cube = rl.gen_mesh_cube(1,1,1)
+    model_cube = rl.load_model_from_mesh(mesh_cube)
+    
+    # cylinder
+    mesh_cylinder = rl.gen_mesh_cylinder(1,2,20)
+    model_cylinder = rl.load_model_from_mesh(mesh_cylinder)
+    
+
+    mesh_sphere = rl.gen_mesh_sphere(0.4,10,29)
+    model_sphere = rl.load_model_from_mesh(mesh_sphere)
+    
+    # move 
+    pos = rl.Vector3()
+    
+    while not rl.window_should_close():
+        dt = rl.get_frame_time()
+        
+        rl.clear_background(rl.WHITE)
+        rl.begin_drawing()
+        
+        rl.begin_mode3d(camera)
+
+        rl.draw_grid(10,0.5)
+        rl.draw_model(model_cylinder, rl.Vector3(10,0,0),1,rl.YELLOW)
+        rl.draw_model(model_cube,rl.Vector3(-20,10,0),1,rl.BLUE)
+        rl.draw_model(model_sphere,pos,1,rl.RED)
+        #rl.draw_line3d(rl.Vector3(-4,0,-2),rl.Vector3(5,2,3), rl.BLACK)
+
+        rl.end_mode3d()
+
+        rl.end_drawing()
+    rl.close_window()
+
+if __name__ == "__main__":
+    main()

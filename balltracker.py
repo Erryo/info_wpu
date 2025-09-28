@@ -1,5 +1,6 @@
 # Code modified from github.com/tanat44/PingpongBallTracker
 
+import re
 import cv2
 import numpy as np
 import imutils
@@ -7,7 +8,7 @@ import imutils
 
 class ColorThreshold():
 
-    def __init__(self, h_min1=0, h_max1=10, h_min2=160, h_max2=180, s_min=100, s_max=255, v_min=50, v_max=255):
+    def __init__(self,h_min1=0, h_max1=10, h_min2=160, h_max2=180, s_min=100, s_max=255, v_min=50, v_max=255):
         # Lower red range
         self.h_min1 = h_min1
         self.h_max1 = h_max1
@@ -19,6 +20,8 @@ class ColorThreshold():
         self.s_max = s_max
         self.v_min = v_min
         self.v_max = v_max
+
+    
     def getLowerRed(self):
         return (self.h_min1, self.s_min, self.v_min), (self.h_max1, self.s_max, self.v_max)
 
@@ -26,12 +29,19 @@ class ColorThreshold():
         return (self.h_min2, self.s_min, self.v_min), (self.h_max2, self.s_max, self.v_max)
 
 class BallTracker:
-    def __init__(self):
+    def __init__(self,target = (0,0)):
         # Two ranges for red (since it wraps in HSV)
         self.lower_red1 = np.array([0, 100, 100])
         self.kernel = np.ones((3, 3), np.uint8)
         self.color_thr = ColorThreshold()
-    def calculate(self, frame):
+        self.target = target
+        self.dx = 0
+        self.dy = 0
+        self.circle_x = 0 
+        self.circle_y = 0 
+        self.circle_radius = 0
+    def find(self, frame):
+        frame = np.copy(frame)
         self.height, self.width, c  = frame.shape
 
         blurred = cv2.GaussianBlur(frame, (13, 13), 0)
@@ -70,6 +80,9 @@ class BallTracker:
         if len(ball_cnts) > 0:
             c = max(ball_cnts, key=cv2.contourArea)
             ((x, y), radius) = cv2.minEnclosingCircle(c)
+            self.circle_x = x
+            self.circle_y = y
+            self.circle_radius = radius
             M = cv2.moments(c)
             center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
 
@@ -86,3 +99,10 @@ class BallTracker:
         mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
 
         return True, frame, mask
+    def calculate(self,frame):
+        success,_,_ = self.find(frame)
+        if not success:
+            return False
+        self.dx = self.target[0]-self.circle_x
+        self.dy = self.target[1]-self.circle_y
+        return True
