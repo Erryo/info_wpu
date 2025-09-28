@@ -2,6 +2,7 @@ import raylibpy as rl
 import ctypes
 import numpy as np
 import balltracker as bt
+import control as ctrl
 import cv2
 
 
@@ -29,14 +30,28 @@ def main():
     model_sphere = rl.load_model_from_mesh(mesh_sphere)
 
     ball_tracker = bt.BallTracker(target=(rl.get_screen_width()//2,rl.get_screen_height()//2))
+    pid_x = ctrl.PIDControler(rl.get_screen_width()//2,1,0.1,0.05)
    
     # move 
     pos = rl.Vector3(7,1,-15)
     angle = 180
     success = False
     
+    rl.set_target_fps(10)
     while not rl.window_should_close():
-        angle = angle%360
+
+        output_pid = pid_x.compute(ball_tracker.circle_x)
+
+        output_pid = px_to_angle(output_pid)
+        if not pid_x.reached_setpoint(ball_tracker.circle_x):
+            angle += output_pid
+        else:
+            pid_x.plot()
+
+        if rl.is_key_pressed(rl.KEY_A):
+            angle += 10
+        if rl.is_key_pressed(rl.KEY_D): 
+            angle -= 10                 
         camera.target = rotate(angle)
         
         rl.clear_background(rl.WHITE)
@@ -63,11 +78,10 @@ def main():
         arr = np.frombuffer(buf, dtype=np.uint8).reshape((image.height, image.width, 4))
         frame = frame = cv2.cvtColor(arr, cv2.COLOR_RGBA2BGR)
 
-     #   if image.export("reneder.jpg"):
-      #      frame = cv2.imread("reneder.jpg")
         success = ball_tracker.calculate(frame)
         if success:
-            print(ball_tracker.circle_x,ball_tracker.circle_y)
+#            print(ball_tracker.circle_x,ball_tracker.circle_y)
+            print(ball_tracker.dx)
             rl.draw_circle_lines(int(ball_tracker.circle_x),int(ball_tracker.circle_y),int(ball_tracker.circle_radius),rl.BLUE)
             rl.draw_circle_lines(int(ball_tracker.circle_x+ball_tracker.dx),int(ball_tracker.circle_y+ball_tracker.dy),int(ball_tracker.circle_radius),rl.GREEN)
         
@@ -75,6 +89,8 @@ def main():
 
     rl.close_window()
 
+def px_to_angle(px):
+    return  -px//1000
 def rotate(angle) :
     angle = np.deg2rad(angle)
     rotate_x = np.sin(angle) 
