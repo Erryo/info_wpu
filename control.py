@@ -20,6 +20,7 @@ class PIDControler():
     def compute(self,pv) :
         self.past_variables.append(pv)
         self.dt = time.time()-self.last_calc
+        self.dt = min(max(self.dt, 1/120), 1/30) 
         self.times.append(self.times[-1]+self.dt)
 
         error = self.setpoint-pv
