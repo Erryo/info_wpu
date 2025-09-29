@@ -41,7 +41,7 @@ class BallTracker:
         self.circle_x = 0 
         self.circle_y = 0 
         self.circle_radius = 0
-        self.radiuses = LimitedList(5)
+        self.radiuses = []
         self.min_rad =min_r
         self.max_rad = max_r 
     def find(self, frame):
@@ -87,7 +87,7 @@ class BallTracker:
             self.circle_x = x
             self.circle_y = y
             self.circle_radius = radius
-            self.radiuses.add(self.circle_radius)
+            self.radiuses.append(self.circle_radius)
             M = cv2.moments(c)
             center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
 
@@ -111,11 +111,10 @@ class BallTracker:
             return False
         self.dx = self.target[0]-self.circle_x
         self.dy = self.target[1]-self.circle_y
-        print("Radiuses",self.radiuses.list)
         average = 0
-        for r in self.radiuses.list:
+        for r in self.radiuses[-5:]:
             average += r
-        self.delta_radius = self.circle_radius-self.radiuses.list[-1]
+        self.delta_radius = self.circle_radius-(average/5)
         
         return True
 
@@ -129,5 +128,4 @@ class LimitedList:
         if self.idx == self.len:
             self.idx = 0
         self.list[self.idx]=element
-        self.idx += 1
 

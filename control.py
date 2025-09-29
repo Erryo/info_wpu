@@ -10,6 +10,7 @@ class PIDControler():
         self.setpoint = setpoint # set point,aka goal
         self.margin = margin
 
+        self.logging = False
         self.previous_error = 0
         self.integral = 0
         self.last_calc = time.time()
@@ -18,13 +19,15 @@ class PIDControler():
         self.dt = 0.0
 
     def compute(self,pv) :
-        self.past_variables.append(pv)
+
         self.dt = time.time()-self.last_calc
         self.dt = min(max(self.dt, 1/120), 1/30) 
-        self.times.append(self.times[-1]+self.dt)
+        if self.logging:
+            self.past_variables.append(pv)
+            self.times.append(self.times[-1]+self.dt)
 
         error = self.setpoint-pv
-        P_out = error*self.Kp;
+        P_out = error*self.Kp
         self.integral += error*self.dt
         I_out =self.Ki * self.integral
         derivative = (error - self.previous_error) / self.dt
