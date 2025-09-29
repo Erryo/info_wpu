@@ -29,7 +29,7 @@ class ColorThreshold():
         return (self.h_min2, self.s_min, self.v_min), (self.h_max2, self.s_max, self.v_max)
 
 class BallTracker:
-    def __init__(self,target = (0,0)):
+    def __init__(self,target = (0,0),min_r=20,max_r=40):
         # Two ranges for red (since it wraps in HSV)
         self.lower_red1 = np.array([0, 100, 100])
         self.kernel = np.ones((3, 3), np.uint8)
@@ -40,6 +40,8 @@ class BallTracker:
         self.circle_x = 0 
         self.circle_y = 0 
         self.circle_radius = 0
+        self.min_rad =min_r
+        self.max_rad = max_r 
     def find(self, frame):
         frame = np.copy(frame)
         self.height, self.width, c  = frame.shape
@@ -74,7 +76,7 @@ class BallTracker:
         if len(cnts) > 0:
             for c in cnts:
                 ((x, y), radius) = cv2.minEnclosingCircle(c)
-                if 20 < radius < 40:
+                if self.min_rad < radius < self.max_rad:
                     ball_cnts.append(c)
 
         if len(ball_cnts) > 0:

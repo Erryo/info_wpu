@@ -46,6 +46,7 @@ class PIDControler():
         self.times = [0.0]
         self.dt = 0.0
         self.last_calc = time.time()
+        self.past_variables = [0]
 
     def plot(self):
         plt.figure(figsize=(10, 6))
