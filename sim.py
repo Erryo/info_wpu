@@ -30,10 +30,12 @@ def main():
     model_sphere = rl.load_model_from_mesh(mesh_sphere)
 
     ball_tracker = bt.BallTracker(target=(rl.get_screen_width()//2,rl.get_screen_height()//2),min_r=0,max_r=100)
+    # ball has to be center of screen in x achsis, tolerance 20px
     pid_x = ctrl.PIDControler(rl.get_screen_width()//2,1,0.1,0.05,20)
-    pid_x.logging = True
+    # ball has to be center of screen in y achsis,tolerance 20px
     pid_y = ctrl.PIDControler(rl.get_screen_height()//2,1,0.1,0.05,20)
-    pid_z = ctrl.PIDControler(30,1,0.1,0.05,7)
+    # radius has to be 30, tolerance 1px
+    pid_z = ctrl.PIDControler(30,1,0.1,0.05,1)
 
 
     # move
@@ -63,22 +65,23 @@ def main():
                                               
 
 
-#        output_pid_zx = pid_x.compute(ball_tracker.circle_x)
-#        output_pid_zx = px_to_angle(output_pid_zx)
-#
-#        if not pid_x.reached_setpoint(ball_tracker.circle_x):
-#            angle += output_pid_zx
-#        else:
-#            pid_x.reset()
-#            output_pid_y = pid_y.compute(ball_tracker.circle_y)    
-#            output_pid_y = px_to_angle(output_pid_y)
-#            #print("output_pid_y:",output_pid_y)
-#                                                                   
-#            if not pid_y.reached_setpoint(ball_tracker.circle_y): 
-#                height += output_pid_y                             
-#            else:                                                  
-#                pid_y.reset()                                     
-#
+        output_pid_zx = pid_x.compute(ball_tracker.circle_x)
+        output_pid_zx = px_to_angle(output_pid_zx)
+
+        if not pid_x.reached_setpoint(ball_tracker.circle_x):
+            pass
+            angle += output_pid_zx
+        else:
+            pid_x.reset()
+    
+            output_pid_y = pid_y.compute(ball_tracker.circle_y)    
+            output_pid_y = px_to_angle(output_pid_y)
+            if not pid_y.reached_setpoint(ball_tracker.circle_y): 
+                pass
+                height += output_pid_y                             
+            else:                                                  
+                pid_y.reset()                                     
+    
         output_pid_z = pid_z.compute(ball_tracker.circle_radius)
         output_pid_z =  -px_to_angle(output_pid_z)
         if not pid_z.reached_setpoint(ball_tracker.circle_radius):
