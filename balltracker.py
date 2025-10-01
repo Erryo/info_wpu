@@ -48,6 +48,7 @@ class BallTracker:
         frame = np.copy(frame)
         self.height, self.width, c  = frame.shape
 
+        frame=  cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         blurred = cv2.GaussianBlur(frame, (13, 13), 0)
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 

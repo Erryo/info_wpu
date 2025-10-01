@@ -30,13 +30,16 @@ def main():
 
     drone_conn = True
     drone = tello.Tello()
+
     try:
         drone.connect()
-        drone.streamon()
-        drone.takeoff()
-    except Exeption as e:
+    except Exception as e:
         drone_conn = False
-        print("Error starting drone",drone,type(drone),e)
+        print(e)
+        sys.exit()
+        print("Error starting drone",drone,type(drone))
+    drone.streamon()
+    drone.takeoff()
     # initialize
     pg.init()
     font=pg.font.Font(None,20)
@@ -49,11 +52,11 @@ def main():
 
     ball_tracker = bt.BallTracker(target=(width//2,height//2),min_r=0,max_r=100)
     # ball has to be center of screen in x achsis, tolerance 20px
-    pid_x = ctrl.PIDControler(width//2,1,0.1,0.05,20)
+    pid_x = ctrl.PIDControler(width//2,1,0.1,0.0,20)
     # ball has to be center of screen in y achsis,tolerance 20px
-    pid_y = ctrl.PIDControler(height//2,1,0.1,0.05,20)
+    pid_y = ctrl.PIDControler(height//2,1,0.1,0.0,20)
     # radius has to be 30, tolerance 1px
-    pid_z = ctrl.PIDControler(30,1,0.1,0.05,1)
+    pid_z = ctrl.PIDControler(30,1,0.1,0.0,1)
 
 
     # move
@@ -84,13 +87,15 @@ def main():
                 if Track_Ball:
                     img = cv2.GaussianBlur(img, (17, 17), 0)
                     output_pid_x = pid_x.compute(ball_tracker.circle_x)
-                    output_pid_x = px_to_angle(output_pid_x)
+                    print(output_pid_x)
+                    output_pid_x = int(px_to_angle(output_pid_x))
 
                     if not pid_x.reached_setpoint(ball_tracker.circle_x):
                         pass
                         angle += output_pid_x
                     else:
                         pid_x.reset()
+                    print(output_pid_x)
                     if output_pid_x > 0:
                         drone.rotate_clockwise(output_pid_x)
                     else:
@@ -127,7 +132,7 @@ def main():
 
 
 def px_to_angle(anngl):
-    return anngl/1000
+    return anngl/10
 
 def do_input():
     global Should_quit,Track_Ball,Abort,Set_Radius

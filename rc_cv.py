@@ -67,8 +67,8 @@ def main():
                 start_time = time.time()
             frame_read = drone.get_frame_read()
 
-            if frame_read.frame is not None:
-                img = frame_read.frame
+            img = frame_read.frame
+            if img is not None:
                 img = cv2.transpose(img)   # optional, Tello feed may be rotated
                 if Track_Ball:
                     img = cv2.GaussianBlur(img, (17, 17), 0)
@@ -76,7 +76,7 @@ def main():
                     angle,radius,contour = imgproc.get_angle(r,g,b)
                     # cv2.imwrite("photos/g.png",g)
                     # cv2.imwrite("photos/b.png",b)
-                    cv2.drawContours(img,[contour],0,(0,255,0),2)
+                    cv2.drawContours(src=img,contours=[contour],contourIdx=-1,color=(0,255,0),thickness=2)
 
                     img =imgproc.detect_circle_1(img)
                     #img = imgproc.filter_col(150,100,r,g,b)
