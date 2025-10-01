@@ -39,7 +39,6 @@ def main():
     except:
         drone_conn = False
         print("Error",drone,type(drone))
-    print("battery",drone.get_battery())
     # initialize
     pg.init()
     font=pg.font.Font(None,20)
@@ -77,7 +76,7 @@ def main():
                     angle,radius,contour = imgproc.get_angle(r,g,b)
                     # cv2.imwrite("photos/g.png",g)
                     # cv2.imwrite("photos/b.png",b)
-                    img = cv2.drawContours(img,[contour],0,(0,255,0),2)
+                    cv2.drawContours(img,[contour],0,(0,255,0),2)
 
                     img =imgproc.detect_circle_1(img)
                     #img = imgproc.filter_col(150,100,r,g,b)

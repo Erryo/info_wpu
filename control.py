@@ -1,5 +1,6 @@
 import time
 import matplotlib.pyplot as plt
+import balltracker as bt
 import numpy as np
 
 class PIDControler():
@@ -14,8 +15,8 @@ class PIDControler():
         self.previous_error = 0
         self.integral = 0
         self.last_calc = time.time()
-        self.past_variables = [pv]
-        self.times = [0.0]
+        self.past_variables =[pv]
+        self.times=[0.0]
         self.dt = 0.0
 
     def compute(self,pv) :
@@ -97,8 +98,6 @@ def test_pid_temp():
 
         # Store the process variable
     # Plot results
-    print("Len Temps:",len(pid.past_variables))
-    print("Len Time:",len(pid.times))
     pid.plot()
 
 

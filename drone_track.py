@@ -34,9 +34,9 @@ def main():
         drone.connect()
         drone.streamon()
         drone.takeoff()
-    except:
+    except Exeption as e:
         drone_conn = False
-        print("Error",drone,type(drone))
+        print("Error starting drone",drone,type(drone),e)
     # initialize
     pg.init()
     font=pg.font.Font(None,20)
@@ -69,7 +69,6 @@ def main():
         screen.fill(wincolor)
 
         do_input()
-        print("ABort",Abort)
         if Abort:
             drone.emergency()
             sys.exit()
@@ -100,6 +99,7 @@ def main():
 
                     success = ball_tracker.calculate(img)
                     if Set_Radius:
+                        print("setting radius:",ball_tracker.circle_radius)
                         pid_z.setpoint = int(ball_tracker.circle_radius)
                         Set_Radius = False
                     if success:
@@ -115,6 +115,9 @@ def main():
             temp = -1000
         write(screen,f"Winkel:{angle}*   Radius:{ball_tracker.circle_radius}px",(0,10))
         write(screen,f"Akku:{batt}%   T:{temp}*C",(0,40))
+        write(screen,f"setpoint Radius:{pid_z.setpoint}",(width-200,0))
+        write(screen,f"output_pid_x:{pid_x.past_variables[-1]}",(width-200,40))
+
         pg.display.update()
 
     pg.quit()

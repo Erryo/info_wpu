@@ -31,11 +31,11 @@ def main():
 
     ball_tracker = bt.BallTracker(target=(rl.get_screen_width()//2,rl.get_screen_height()//2),min_r=0,max_r=100)
     # ball has to be center of screen in x achsis, tolerance 20px
-    pid_x = ctrl.PIDControler(rl.get_screen_width()//2,1,0.1,0.05,20)
+    pid_x = ctrl.PIDControler(rl.get_screen_width()//2,1,0.1,0,20)
     # ball has to be center of screen in y achsis,tolerance 20px
-    pid_y = ctrl.PIDControler(rl.get_screen_height()//2,1,0.1,0.05,20)
+    pid_y = ctrl.PIDControler(rl.get_screen_height()//2,1,0.1,0,20)
     # radius has to be 30, tolerance 1px
-    pid_z = ctrl.PIDControler(30,1,0.1,0.05,1)
+    pid_z = ctrl.PIDControler(30,1,0.1,0.,1)
 
 
     # move
