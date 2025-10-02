@@ -44,11 +44,11 @@ class BallTracker:
         self.radiuses = LimitedList(5)
         self.min_rad =min_r
         self.max_rad = max_r 
+    # frame has to be in rgb
     def find(self, frame):
         frame = np.copy(frame)
         self.height, self.width, c  = frame.shape
 
-        frame=  cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         blurred = cv2.GaussianBlur(frame, (13, 13), 0)
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
@@ -112,7 +112,6 @@ class BallTracker:
             return False
         self.dx = self.target[0]-self.circle_x
         self.dy = self.target[1]-self.circle_y
-        print("Radiuses",self.radiuses.list)
         average = 0
         for r in self.radiuses.list:
             average += r

@@ -110,7 +110,7 @@ def main():
               (resolution[0] - 400, 10))
 
         # Fenster aktualisieren
-        pg.display.update()
+    pg.display.update()
 
     # ----------------- AUFRÄUMEN -----------------
     pg.quit()             # Fenster schließen

@@ -111,6 +111,7 @@ def main():
                         cv2.circle(img=img,center=(int(ball_tracker.circle_x),int(ball_tracker.circle_y)),radius=int(ball_tracker.circle_radius),color=(255,0,0),thickness=2)
 
 
+                img=  cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
                 frame_surface = pg.surfarray.make_surface(img)
 
                 screen.blit(frame_surface, (0, 0))

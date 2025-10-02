@@ -5,6 +5,8 @@ import balltracker as bt
 import control as ctrl
 import cv2
 
+XBOX_ALIAS_1 = "xbox"
+XBOX_ALIAS_2 = "x-box"
 
 def main():
     rl.init_window(1920, 1080, "3D base")
@@ -31,11 +33,14 @@ def main():
 
     ball_tracker = bt.BallTracker(target=(rl.get_screen_width()//2,rl.get_screen_height()//2),min_r=0,max_r=100)
     # ball has to be center of screen in x achsis, tolerance 20px
-    pid_x = ctrl.PIDControler(rl.get_screen_width()//2,1,0.1,0,20)
+    pid_x = ctrl.PIDControler(rl.get_screen_width()//2,1,0.01,0.1,24)
     # ball has to be center of screen in y achsis,tolerance 20px
-    pid_y = ctrl.PIDControler(rl.get_screen_height()//2,1,0.1,0,20)
+    pid_y = ctrl.PIDControler(rl.get_screen_height()//2,1,0.01,0.1,24)
     # radius has to be 30, tolerance 1px
-    pid_z = ctrl.PIDControler(30,1,0.1,0.,1)
+    pid_z = ctrl.PIDControler(30,1,0.01,0.1,4)
+    pid_z.logging = True
+    pid_x.logging = True
+    pid_y.logging = True
 
 
     # move
@@ -48,21 +53,11 @@ def main():
     rl.set_target_fps(60)
     while not rl.window_should_close():
 
-        if rl.is_key_down(rl.KEY_A):
-            pos.x -= 50 * rl.get_frame_time()
-        if rl.is_key_down(rl.KEY_D):
-            pos.x += 50 * rl.get_frame_time()
-
-        if rl.is_key_down(rl.KEY_W):
-            pos.z -= 50 * rl.get_frame_time()
-        if rl.is_key_down(rl.KEY_S):
-            pos.z += 50 * rl.get_frame_time()
-
-        if rl.is_key_down(rl.KEY_Q):          
-            pos.y -= 50 * rl.get_frame_time() 
-        if rl.is_key_down(rl.KEY_E):          
-            pos.y += 50 * rl.get_frame_time() 
                                               
+        vels = do_joy_input(0)
+        pos.z += vels[0]*10 * rl.get_frame_time()
+        pos.x -= vels[1]*10 * rl.get_frame_time()
+        pos.y -= vels[3]*10 * rl.get_frame_time() 
 
 
         output_pid_zx = pid_x.compute(ball_tracker.circle_x)
@@ -82,12 +77,13 @@ def main():
             else:                                                  
                 pid_y.reset()                                     
     
-        output_pid_z = pid_z.compute(ball_tracker.circle_radius)
-        output_pid_z =  -px_to_angle(output_pid_z)
-        if not pid_z.reached_setpoint(ball_tracker.circle_radius):
-            depth += output_pid_z
-        else: 
-            pid_z.reset()
+            output_pid_z = pid_z.compute(ball_tracker.circle_radius)
+            output_pid_z =  -px_to_angle(output_pid_z)
+            if not pid_z.reached_setpoint(ball_tracker.circle_radius):
+                pass
+                depth += output_pid_z
+            else: 
+                pid_z.reset()
 
         camera.target = rotate(angle)
         camera.target = (camera.target[0],height,camera.target[2])
@@ -119,16 +115,21 @@ def main():
         buf_type = ctypes.c_uint8 * (size * 4)
         buf = ctypes.cast(colors, ctypes.POINTER(buf_type)).contents
         arr = np.frombuffer(buf, dtype=np.uint8).reshape((image.height, image.width, 4))
-        frame = frame = cv2.cvtColor(arr, cv2.COLOR_RGBA2BGR)
+        frame = cv2.cvtColor(arr, cv2.COLOR_RGBA2BGR)
+        cv2.imwrite("save.png",frame)
         rl.unload_image_colors(colors)
         rl.unload_image(image)
 
         success = ball_tracker.calculate(frame)
         if success:
-#            print(ball_tracker.circle_x,ball_tracker.circle_y)
-            print(ball_tracker.dx)
-            rl.draw_circle_lines(int(ball_tracker.circle_x),int(ball_tracker.circle_y),int(ball_tracker.circle_radius),rl.BLUE)
-            rl.draw_circle_lines(int(ball_tracker.circle_x+ball_tracker.dx),int(ball_tracker.circle_y+ball_tracker.dy),int(ball_tracker.circle_radius),rl.GREEN)
+            print("found bal",ball_tracker.circle_x)
+            rl.draw_circle_lines(int(ball_tracker.circle_x),int(ball_tracker.circle_y),int(ball_tracker.circle_radius)+4,rl.BLUE)
+            rl.draw_circle_lines(int(ball_tracker.circle_x+ball_tracker.dx),int(ball_tracker.circle_y+ball_tracker.dy),int(pid_z.setpoint),rl.GREEN)
+        else:
+            pass
+          #  ball_tracker.circle_x = pid_x.past_variables[-1]
+          #  ball_tracker.circle_y = pid_y.past_variables[-1]
+          #  ball_tracker.circle_radius= pid_z.past_variables[-1]
 
 
 
@@ -142,5 +143,21 @@ def rotate(angle) :
     rotate_y = np.cos(angle)
     return rotate_x*10,1,rotate_y*10
 
+def do_joy_input(gamepad=0):
+    rl.draw_text(f"GP{gamepad}: {rl.get_gamepad_name(gamepad)}", 10, 10, 10, rl.BLACK)
+    velocities = [0.0,0.0,0.0,0.0]
+    if rl.is_gamepad_available(gamepad):
+        # Axis values
+        leftStickX = rl.get_gamepad_axis_movement(gamepad, rl.GAMEPAD_AXIS_LEFT_X)
+        leftStickY = rl.get_gamepad_axis_movement(gamepad, rl.GAMEPAD_AXIS_LEFT_Y)
+        rightStickX = rl.get_gamepad_axis_movement(gamepad, rl.GAMEPAD_AXIS_RIGHT_X)
+        rightStickY = rl.get_gamepad_axis_movement(gamepad, rl.GAMEPAD_AXIS_RIGHT_Y)
+#        leftTrigger = rl.get_gamepad_axis_movement(gamepad, rl.GAMEPAD_AXIS_LEFT_TRIGGER)
+#        rightTrigger = rl.get_gamepad_axis_movement(gamepad, rl.GAMEPAD_AXIS_RIGHT_TRIGGER)
+        velocities = [leftStickX,leftStickY,rightStickX,rightStickY]
+    return velocities
+
+
 if __name__ == "__main__":
     main()
+
