@@ -91,7 +91,6 @@ def main():
                     output_pid_x = int(px_to_angle(output_pid_x))
 
                     if not pid_x.reached_setpoint(ball_tracker.circle_x):
-                        pass
                         angle += output_pid_x
                     else:
                         pid_x.reset()
