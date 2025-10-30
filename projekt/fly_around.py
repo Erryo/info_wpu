@@ -1,3 +1,4 @@
+from time import sleep
 import pygame as pg
 from djitellopy import tello
 import sys
@@ -54,17 +55,15 @@ def main():
 
         angle += delta_angle
 
-        if angle > 360:
-            should_quit = True
         
 
-        x  = math.sin(math.radians(delta_angle))
-        y  = math.cos(math.radians(delta_angle))
+        x  = math.cos(math.radians(delta_angle)) * distance_to_target
+        y  = math.sin(math.radians(delta_angle)) * distance_to_target
 
-        delta_x = distance_to_target - x
-        delta_y = y
-        drone.move("back",int(delta_x))
-        drone.move("left",int(delta_y))
+        delta_x = int(distance_to_target - x)
+        delta_y = int(y)
+        drone.send_rc_control(delta_y,delta_x,0,0)
+        sleep(drone.TIME_BTW_RC_CONTROL_COMMANDS)
 
 
     drone.land()
