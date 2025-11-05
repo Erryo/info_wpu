@@ -9,8 +9,9 @@ import math
 
 def main():
 
+    photo_dir =  "Test1/images/" 
     delta_angle = 30
-    distance_to_target = 100 #cm
+    distance_to_target = 50 #cm
     angle = 0
     x,y = 0,0
 
@@ -22,10 +23,18 @@ def main():
         print("Error",drone,type(drone))
         sys.exit()
 
+    batt = drone.get_battery()
+    print(batt)
     #die Drohne starten
     drone.streamon()
     drone.takeoff()
 
+
+    drone.enable_mission_pads()
+    drone.set_mission_pad_detection_direction(2)
+    missionPadId = drone.get_mission_pad_id()
+    print(missionPadId)
+    index = 0
 
     # Starte eine Schleife, die läuft, bis wir sie stoppen
     should_quit = False
@@ -48,10 +57,12 @@ def main():
         # Ein Objekt mit dem Bild und Details der Drohne abrufen
         frame_read = drone.get_frame_read()
         # auf das Bild zugreifen
+        #
+        index += 1
         img = frame_read.frame
         if img is not None: # sicherstellen, dass das Bild korrekt empfangen wurde
-            img = cv2.transpose(img)   # optional, Tello-Feed könnte gedreht sein
-            cv2.imwrite("photos/1.jpg",img)
+
+            cv2.imwrite(photo_dir+"t"+str(index)+".png",img)
 
         angle += delta_angle
 
@@ -60,10 +71,8 @@ def main():
         x  = math.cos(math.radians(delta_angle)) * distance_to_target
         y  = math.sin(math.radians(delta_angle)) * distance_to_target
 
-        delta_x = int(distance_to_target - x)
-        delta_y = int(y)
-        drone.send_rc_control(delta_y,delta_x,0,0)
-        sleep(drone.TIME_BTW_RC_CONTROL_COMMANDS)
+        drone.go_xyz_speed(int(x), 0, int(y), 60)
+        drone.rotate_counter_clockwise(delta_angle)
 
 
     drone.land()
