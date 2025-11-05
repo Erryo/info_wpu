@@ -1,3 +1,4 @@
+from threading import currentThread
 from time import sleep
 import pygame as pg
 from djitellopy import tello
@@ -10,7 +11,7 @@ import math
 def main():
 
     photo_dir =  "Test1/images/" 
-    delta_angle = 30
+    delta_angle = 40
     distance_to_target = 50 #cm
     angle = 0
     x,y = 0,0
@@ -36,6 +37,9 @@ def main():
     print(missionPadId)
     index = 0
 
+    current_x = 0
+    current_y = 0
+    current_y = 30
     # Starte eine Schleife, die läuft, bis wir sie stoppen
     should_quit = False
     while not should_quit:
@@ -71,8 +75,9 @@ def main():
         x  = math.cos(math.radians(delta_angle)) * distance_to_target
         y  = math.sin(math.radians(delta_angle)) * distance_to_target
 
-        drone.go_xyz_speed(int(x), 0, int(y), 60)
-        drone.rotate_counter_clockwise(delta_angle)
+        print("Going to:",int(x)-current_x,int(y)-current_y)
+#        drone.go_xyz_speed(int(x)-current_x, 0, int(y)-current_y, 60)
+        drone.go_xyz_speed_mid(int(x), 100, int(y), 60,3)
 
 
     drone.land()
