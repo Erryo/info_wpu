@@ -72,10 +72,10 @@ def main():
 
         
 
-        x  = math.cos(math.radians(delta_angle)) * distance_to_target
-        y  = math.sin(math.radians(delta_angle)) * distance_to_target
+        x  = math.cos(math.radians(angle)) * distance_to_target
+        y  = math.sin(math.radians(angle)) * distance_to_target
 
-        print("Going to:",int(x)-current_x,int(y)-current_y)
+        print("Going to:",int(x),int(y))
 #        drone.go_xyz_speed(int(x)-current_x, 0, int(y)-current_y, 60)
         drone.go_xyz_speed_mid(int(x), 100, int(y), 60,3)
 
