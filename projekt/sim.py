@@ -23,8 +23,8 @@ def main():
     model_cube = rl.load_model_from_mesh(mesh_cube)
     model_cube_2 = rl.load_model_from_mesh(mesh_cube)
 
-    delta_angle = 10
-    distance_to_target = 20 #cm
+    delta_angle = 30
+    distance_to_target = 10 #cm
 
 
     curr_x,curr_y = distance_to_target,distance_to_target
