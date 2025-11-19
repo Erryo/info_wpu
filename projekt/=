@@ -1,0 +1,55 @@
+import sys
+import math
+import matplotlib  as mp
+
+from numpy import core
+
+
+
+def main():
+
+    photo_dir =  "Test1/images/"
+    delta_angle = 40
+    distance_to_target = 50 #cm
+    angle = 0
+    x,y = 0,0
+
+    index = 0
+    coords = []
+
+    # Starte eine Schleife, die läuft, bis wir sie stoppen
+    should_quit = False
+    while not should_quit:
+        # Gehe alle Tasten durch, die der Benutzer gedrückt hat
+        #
+        index += 1
+        angle += delta_angle
+        if angle > 360 :
+            break
+
+
+
+        x  = math.cos(math.radians(angle)) * distance_to_target
+        y  = math.sin(math.radians(angle)) * distance_to_target
+        coords.append((x,y))
+
+        print("Going to:",int(x),int(y))
+
+        plt.figure(figsize=(10, 6))                                               
+        plt.plot(self.times, self.past_variables, label='Process Variable')       
+        plt.axhline(y=self.setpoint, color='r', linestyle='--', label='Setpoint') 
+        plt.xlabel('Time (s)')                                                    
+        plt.ylabel('Process_variable')                                            
+        plt.title('PID Controller')                                               
+        plt.legend()                                                              
+        plt.grid()                                                                
+        plt.show()                                                                
+                                                                                  
+    # beende das Python-Programm
+    sys.exit()
+
+
+
+if __name__ == "__main__":
+    main()
+

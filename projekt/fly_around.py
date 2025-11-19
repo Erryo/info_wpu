@@ -1,4 +1,3 @@
-from threading import currentThread
 from time import sleep
 import pygame as pg
 from djitellopy import tello
@@ -33,13 +32,10 @@ def main():
 
     drone.enable_mission_pads()
     drone.set_mission_pad_detection_direction(2)
-    missionPadId = drone.get_mission_pad_id()
-    print(missionPadId)
+    mid = drone.get_mission_pad_id()
+    print(mid)
     index = 0
 
-    current_x = 0
-    current_y = 0
-    current_y = 30
     # Starte eine Schleife, die läuft, bis wir sie stoppen
     should_quit = False
     while not should_quit:
@@ -76,11 +72,10 @@ def main():
         y  = math.sin(math.radians(angle)) * distance_to_target
 
         print("Going to:",int(x),int(y))
-#        drone.go_xyz_speed(int(x)-current_x, 0, int(y)-current_y, 60)
-        drone.go_xyz_speed_mid(int(x), 100, int(y), 60,3)
+        drone.go_xyz_speed_mid(int(x), 100, int(y), 60,mid)
 
 
-    drone.land()
+#    drone.land()
     # beende das Python-Programm
     sys.exit()
 
