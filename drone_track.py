@@ -10,7 +10,7 @@ import control as ctrl
 
 Speed = 10
 Should_quit = False
-Track_Ball = False
+Track_Ball = True
 Abort = False
 Set_Radius = False
 font = None
@@ -50,7 +50,7 @@ def main():
 
     width, height = screen.get_size()
 
-    ball_tracker = bt.BallTracker(target=(width//2,height//2),min_r=0,max_r=100)
+    ball_tracker = bt.BallTracker(target=(width//2,height//2),min_r=20,max_r=90)
     # ball has to be center of screen in x achsis, tolerance 20px
     pid_x = ctrl.PIDControler(width//2,1,0.1,0.0,20)
     # ball has to be center of screen in y achsis,tolerance 20px
@@ -66,18 +66,21 @@ def main():
     depth = 0
     success = False
 
+    output_pid_x = 0
 
     while not Should_quit:
         #time.sleep(0.1)
         screen.fill(wincolor)
 
         do_input()
+ #       print("ABort:",Abort,"Quit:",Should_quit)
         if Abort:
             drone.emergency()
             sys.exit()
         if drone_conn:
             batt = drone.get_battery()
             temp = drone.get_temperature()
+#            print( "Batt:",batt)
 
             frame_read = drone.get_frame_read()
 
@@ -95,22 +98,31 @@ def main():
                     else:
                         pid_x.reset()
                     print(output_pid_x)
-                    if output_pid_x > 0:
-                        drone.rotate_clockwise(output_pid_x)
-                    else:
-                        drone.rotate_counter_clockwise(-output_pid_x)
+
+                    drone.rotate_clockwise(10)
+                    ## WHY DO YOU MAKE THE PROGRAM LAG????!!!!!?!??!?!?
+                  #  if output_pid_x > 0:
+                  #      drone.rotate_clockwise(output_pid_x)
+                  #  else:
+                  #      drone.rotate_counter_clockwise(-output_pid_x)
 
 
                     success = ball_tracker.calculate(img)
+                    #if ball_tracker.frame is not None:
+                    #    img=ball_tracker.frame
                     if Set_Radius:
                         print("setting radius:",ball_tracker.circle_radius)
                         pid_z.setpoint = int(ball_tracker.circle_radius)
                         Set_Radius = False
                     if success:
                         cv2.circle(img=img,center=(int(ball_tracker.circle_x),int(ball_tracker.circle_y)),radius=int(ball_tracker.circle_radius),color=(255,0,0),thickness=2)
+                        cv2.putText(img, f"R: {int(ball_tracker.circle_radius)}",                               
+                             (int(ball_tracker.circle_x) - 40, int(ball_tracker.circle_y) - 10),  # position slightly above the circle 
+                             cv2.FONT_HERSHEY_SIMPLEX,                                         
+                             0.6, (255, 0, 0), 2)  # font scale and color                      
+                                                                                 
 
 
-                img=  cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
                 frame_surface = pg.surfarray.make_surface(img)
 
                 screen.blit(frame_surface, (0, 0))

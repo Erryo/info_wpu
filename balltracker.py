@@ -31,6 +31,8 @@ class ColorThreshold():
 class BallTracker:
     def __init__(self,target = (0,0),min_r=20,max_r=40):
         # Two ranges for red (since it wraps in HSV)
+        self.mask=None
+        self.frame=None
         self.lower_red1 = np.array([0, 100, 100])
         self.kernel = np.ones((3, 3), np.uint8)
         self.color_thr = ColorThreshold()
@@ -50,8 +52,9 @@ class BallTracker:
         self.height, self.width, c  = frame.shape
 
         blurred = cv2.GaussianBlur(frame, (13, 13), 0)
-        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-
+        #hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_RGB2HSV)
+#
         lower1, upper1 = self.color_thr.getLowerRed()
         lower2, upper2 = self.color_thr.getUpperRed()
         
@@ -101,13 +104,12 @@ class BallTracker:
 
 
         # DRAW ROBOT
-            
-        mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
+            mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
 
         return True, frame, mask
 
     def calculate(self,frame):
-        success,_,_ = self.find(frame)
+        success,self.frame,self.mask = self.find(frame)
         if not success:
             return False
         self.dx = self.target[0]-self.circle_x
