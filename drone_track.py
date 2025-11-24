@@ -99,12 +99,11 @@ def main():
                         pid_x.reset()
                     print(output_pid_x)
 
-                    drone.rotate_clockwise(10)
                     ## WHY DO YOU MAKE THE PROGRAM LAG????!!!!!?!??!?!?
-                  #  if output_pid_x > 0:
-                  #      drone.rotate_clockwise(output_pid_x)
-                  #  else:
-                  #      drone.rotate_counter_clockwise(-output_pid_x)
+                    if output_pid_x > 0:
+                        rotate_clockwise_no_wait(drone,output_pid_x)
+                    else:
+                        rotate_counter_clockwise_no_wait(drone,-output_pid_x)
 
 
                     success = ball_tracker.calculate(img)
@@ -164,6 +163,14 @@ def do_input():
         Should_quit = True
 
 
+
+
+# Eigene Funktionen benutzen, um nicht auf eine Antwort zu wartet:
+def rotate_clockwise_no_wait(drone: tello.Tello, x: int):
+    drone.send_command_without_return("cw {}".format(x))
+
+def rotate_counter_clockwise_no_wait(drone: tello.Tello, x: int):
+    drone.send_command_without_return("ccw {}".format(x))
 
 if __name__ == "__main__":
     main()
