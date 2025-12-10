@@ -1,0 +1,14 @@
+/datasets/Test1/images/t4.png
+/datasets/Test1/images/t6.png
+/datasets/Test1/images/t3.png
+/datasets/Test1/images/t10.png
+/datasets/Test1/images/t7.png
+/datasets/Test1/images/t1.png
+/datasets/Test1/images/t2.png
+/datasets/Test1/images/t11.png
+/datasets/Test1/images/t12.png
+/datasets/Test1/images/1.png
+/datasets/Test1/images/t5.png
+/datasets/Test1/images/1.jpg
+/datasets/Test1/images/t9.png
+/datasets/Test1/images/t8.png

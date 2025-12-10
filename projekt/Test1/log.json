@@ -1,0 +1,338 @@
+{
+    "odmVersion": "3.5.6",
+    "memory": {
+        "total": 7543,
+        "available": 3021
+    },
+    "cpus": 8,
+    "images": 14,
+    "options": {
+        "3d_tiles": false,
+        "align": null,
+        "auto_boundary": false,
+        "auto_boundary_distance": 0,
+        "bg_removal": false,
+        "boundary": {},
+        "build_overviews": false,
+        "camera_lens": "auto",
+        "cameras": {},
+        "cog": false,
+        "copy_to": null,
+        "crop": 3,
+        "dem_decimation": 1,
+        "dem_euclidean_map": false,
+        "dem_gapfill_steps": 3,
+        "dem_resolution": 5,
+        "dsm": false,
+        "dtm": false,
+        "end_with": "odm_postprocess",
+        "fast_orthophoto": false,
+        "feature_quality": "high",
+        "feature_type": "dspsift",
+        "force_gps": false,
+        "gcp": null,
+        "geo": null,
+        "gltf": false,
+        "gps_accuracy": 3,
+        "gps_z_offset": 0,
+        "ignore_gsd": false,
+        "matcher_neighbors": 0,
+        "matcher_order": 0,
+        "matcher_type": "flann",
+        "max_concurrency": 4,
+        "merge": "all",
+        "merge_skip_blending": false,
+        "mesh_octree_depth": 11,
+        "mesh_size": 200000,
+        "min_num_features": 10000,
+        "name": "Test1",
+        "no_gpu": false,
+        "optimize_disk_space": false,
+        "orthophoto_compression": "DEFLATE",
+        "orthophoto_cutline": false,
+        "orthophoto_kmz": false,
+        "orthophoto_no_tiled": false,
+        "orthophoto_png": false,
+        "orthophoto_resolution": 5,
+        "pc_classify": false,
+        "pc_copc": false,
+        "pc_csv": false,
+        "pc_ept": false,
+        "pc_filter": 5,
+        "pc_las": false,
+        "pc_quality": "medium",
+        "pc_rectify": false,
+        "pc_sample": 0,
+        "pc_skip_geometric": false,
+        "primary_band": "auto",
+        "project_path": "/datasets/Test1",
+        "radiometric_calibration": "none",
+        "rerun": null,
+        "rerun_all": false,
+        "rerun_from": null,
+        "rolling_shutter": false,
+        "rolling_shutter_readout": 0,
+        "sfm_algorithm": "incremental",
+        "sfm_no_partial": false,
+        "skip_3dmodel": false,
+        "skip_band_alignment": false,
+        "skip_orthophoto": false,
+        "skip_report": false,
+        "sky_removal": false,
+        "sm_cluster": null,
+        "sm_no_align": false,
+        "smrf_scalar": 1.25,
+        "smrf_slope": 0.15,
+        "smrf_threshold": 0.5,
+        "smrf_window": 18.0,
+        "split": 999999,
+        "split_image_groups": null,
+        "split_overlap": 150,
+        "texturing_keep_unseen_faces": false,
+        "texturing_single_material": false,
+        "texturing_skip_global_seam_leveling": false,
+        "tiles": false,
+        "use_3dmesh": false,
+        "use_exif": false,
+        "use_fixed_camera_params": false,
+        "use_hybrid_bundle_adjustment": false,
+        "video_limit": 500,
+        "video_resolution": 4000
+    },
+    "startTime": "2025-11-19T12:18:08.139195",
+    "stages": [
+        {
+            "name": "dataset",
+            "startTime": "2025-11-19T12:18:13.936394",
+            "messages": [
+                {
+                    "message": "Running dataset stage",
+                    "type": "info"
+                },
+                {
+                    "message": "Loading dataset from: /datasets/Test1/images",
+                    "type": "info"
+                },
+                {
+                    "message": "Loading images database: /datasets/Test1/images.json",
+                    "type": "info"
+                },
+                {
+                    "message": "Found 14 usable images",
+                    "type": "info"
+                },
+                {
+                    "message": "GPS position not available for t4.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t6.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t3.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t10.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t7.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t1.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t2.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t11.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t12.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for 1.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t5.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for 1.jpg",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t9.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "GPS position not available for t8.png",
+                    "type": "warning"
+                },
+                {
+                    "message": "Could not generate coordinates file. The orthophoto will not be georeferenced.",
+                    "type": "warning"
+                },
+                {
+                    "message": "Finished dataset stage",
+                    "type": "info"
+                }
+            ]
+        },
+        {
+            "name": "split",
+            "startTime": "2025-11-19T12:18:13.940433",
+            "messages": [
+                {
+                    "message": "Running split stage",
+                    "type": "info"
+                },
+                {
+                    "message": "Normal dataset, will process all at once.",
+                    "type": "info"
+                },
+                {
+                    "message": "Finished split stage",
+                    "type": "info"
+                }
+            ]
+        },
+        {
+            "name": "merge",
+            "startTime": "2025-11-19T12:18:13.940758",
+            "messages": [
+                {
+                    "message": "Running merge stage",
+                    "type": "info"
+                },
+                {
+                    "message": "Normal dataset, nothing to merge.",
+                    "type": "info"
+                },
+                {
+                    "message": "Finished merge stage",
+                    "type": "info"
+                }
+            ]
+        },
+        {
+            "name": "opensfm",
+            "startTime": "2025-11-19T12:18:13.941095",
+            "messages": [
+                {
+                    "message": "Running opensfm stage",
+                    "type": "info"
+                },
+                {
+                    "message": "Maximum photo dimensions: 960px",
+                    "type": "info"
+                },
+                {
+                    "message": "Photo dimensions for feature extraction: 960px",
+                    "type": "info"
+                },
+                {
+                    "message": "No GPS information, using BOW matching by default (you can override this by setting --matcher-type explicitly)",
+                    "type": "info"
+                },
+                {
+                    "message": "Using BOW matching, will use HAHOG feature type, not SIFT",
+                    "type": "warning"
+                },
+                {
+                    "message": [
+                        "use_exif_size: no",
+                        "flann_algorithm: KDTREE",
+                        "feature_process_size: 960",
+                        "feature_min_frames: 10000",
+                        "processes: 4",
+                        "matching_gps_neighbors: 0",
+                        "matching_gps_distance: 0",
+                        "matching_graph_rounds: 50",
+                        "optimize_camera_parameters: yes",
+                        "reconstruction_algorithm: incremental",
+                        "undistorted_image_format: tif",
+                        "bundle_outlier_filtering_type: AUTO",
+                        "sift_peak_threshold: 0.066",
+                        "align_orientation_prior: vertical",
+                        "triangulation_type: ROBUST",
+                        "retriangulation_ratio: 2",
+                        "matcher_type: WORDS",
+                        "feature_type: HAHOG",
+                        "align_method: orientation_prior",
+                        "local_bundle_radius: 0"
+                    ],
+                    "type": "info"
+                },
+                {
+                    "message": "running \"/code/SuperBuild/install/bin/opensfm/bin/opensfm\" detect_features \"/datasets/Test1/opensfm\"",
+                    "type": "info"
+                },
+                {
+                    "message": "Uh oh! Processing stopped because of strange values in the reconstruction. This is often a sign that the input data has some issues or the software cannot deal with it. Have you followed best practices for data acquisition? See https://docs.opendronemap.org/flying/",
+                    "type": "error"
+                }
+            ],
+            "endTime": "2025-11-19T12:18:17.348437",
+            "totalTime": 3.41
+        }
+    ],
+    "processes": [
+        {
+            "command": "\"/code/SuperBuild/install/bin/opensfm/bin/opensfm\" detect_features \"/datasets/Test1/opensfm\"",
+            "exitCode": 1,
+            "output": [
+                "File \"/code/venv/lib/python3.12/site-packages/joblib/parallel.py\", line 1784, in _retrieve",
+                "self._raise_error_fast()",
+                "File \"/code/venv/lib/python3.12/site-packages/joblib/parallel.py\", line 1859, in _raise_error_fast",
+                "error_job.get_result(self.timeout)",
+                "File \"/code/venv/lib/python3.12/site-packages/joblib/parallel.py\", line 758, in get_result",
+                "return self._return_or_raise()",
+                "^^^^^^^^^^^^^^^^^^^^^^^",
+                "File \"/code/venv/lib/python3.12/site-packages/joblib/parallel.py\", line 773, in _return_or_raise",
+                "raise self._result",
+                "AttributeError: 'NoneType' object has no attribute 'astype'"
+            ]
+        }
+    ],
+    "success": false,
+    "error": {
+        "code": 1,
+        "message": "Child returned 1"
+    },
+    "stackTrace": [
+        "Traceback (most recent call last):",
+        "File \"/code/stages/odm_app.py\", line 82, in execute",
+        "self.first_stage.run()",
+        "File \"/code/opendm/types.py\", line 470, in run",
+        "self.next_stage.run(outputs)",
+        "File \"/code/opendm/types.py\", line 470, in run",
+        "self.next_stage.run(outputs)",
+        "File \"/code/opendm/types.py\", line 470, in run",
+        "self.next_stage.run(outputs)",
+        "File \"/code/opendm/types.py\", line 449, in run",
+        "self.process(self.args, outputs)",
+        "File \"/code/stages/run_opensfm.py\", line 35, in process",
+        "octx.feature_matching(self.rerun())",
+        "File \"/code/opendm/osfm.py\", line 435, in feature_matching",
+        "raise e",
+        "File \"/code/opendm/osfm.py\", line 423, in feature_matching",
+        "self.run('detect_features')",
+        "File \"/code/opendm/osfm.py\", line 34, in run",
+        "system.run('\"%s\" %s \"%s\"' %",
+        "File \"/code/opendm/system.py\", line 112, in run",
+        "raise SubprocessException(\"Child returned {}\".format(retcode), retcode)",
+        "opendm.system.SubprocessException: Child returned 1",
+        ""
+    ],
+    "endTime": "2025-11-19T12:18:17.348437",
+    "totalTime": 9.21
+}
