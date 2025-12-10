@@ -52,7 +52,7 @@ class MissionPadController:
     def detect_new_pad(self):
         attempts = 0
         mid, dx, dy, dz = self.read_pad()
-        while (mid == -1 or mid == self.current_pad) and attempts < self.max_attempts:
+        while (mid == -1 or mid != self.current_pad) and attempts < self.max_attempts:
             self.tello.move_forward(self.search_step)
             time.sleep(self.delay)
             mid, dx, dy, dz = self.read_pad()
