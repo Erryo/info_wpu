@@ -8,7 +8,7 @@ import imutils
 
 class ColorThreshold():
 
-    def __init__(self,h_min1=0, h_max1=10, h_min2=160, h_max2=180, s_min=100, s_max=255, v_min=50, v_max=255):
+    def __init__(self,h_min1=0, h_max1=10, h_min2=160, h_max2=180, s_min=0, s_max=255, v_min=50, v_max=255):
         # Lower red range
         self.h_min1 = h_min1
         self.h_max1 = h_max1
@@ -51,10 +51,28 @@ class BallTracker:
         frame = np.copy(frame)
         self.height, self.width, c  = frame.shape
 
-        blurred = cv2.GaussianBlur(frame, (13, 13), 0)
-        #hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-        hsv = cv2.cvtColor(blurred, cv2.COLOR_RGB2HSV)
-#
+        frame = cv2.GaussianBlur(frame, (13, 13), 0)
+        #        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+#        hsv = cv2.cvtColor(blurred, cv2.COLOR_RGB2HSV)# Für Drohne
+
+        lab= cv2.cvtColor(frame, cv2.COLOR_RGB2Lab)
+        l_channel, a, b = cv2.split(lab)
+        
+        # Applying CLAHE to L-channel
+        # feel free to try different values for the limit and grid size:
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        cl = clahe.apply(l_channel)
+        
+        # merge the CLAHE enhanced L-channel with the a and b channel
+        limg = cv2.merge((cl,a,b))
+        
+        # Converting image from LAB Color model to BGR color spcae
+        enhanced_img = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
+        
+        # Stacking the original image with the enhanced image
+        #        result = np.hstack((blurred, enhanced_img))
+        hsv =  cv2.cvtColor(enhanced_img, cv2.COLOR_RGB2HSV)
+
         lower1, upper1 = self.color_thr.getLowerRed()
         lower2, upper2 = self.color_thr.getUpperRed()
         
@@ -95,9 +113,9 @@ class BallTracker:
             M = cv2.moments(c)
             center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
 
-            cv2.circle(frame, (int(x), int(y)), int(radius),(0, 255, 255), 2)
-            cv2.circle(frame, center, 5, (0, 0, 255), -1)
-            cv2.putText(frame, f"R: {int(radius)}", 
+            cv2.circle(hsv, (int(x), int(y)), int(radius),(0, 255, 255), 2)
+            cv2.circle(hsv, center, 5, (0, 0, 255), -1)
+            cv2.putText(hsv, f"R: {int(radius)}", 
                 (int(x) - 40, int(y) - 10),  # position slightly above the circle
                 cv2.FONT_HERSHEY_SIMPLEX, 
                 0.6, (255, 0, 0), 2)  # font scale and color
@@ -106,7 +124,7 @@ class BallTracker:
         # DRAW ROBOT
             mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
 
-        return True, frame, mask
+        return True, hsv, mask
 
     def calculate(self,frame):
         success,self.frame,self.mask = self.find(frame)

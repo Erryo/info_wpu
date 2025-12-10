@@ -52,7 +52,7 @@ def main():
 
     ball_tracker = bt.BallTracker(target=(width//2,height//2),min_r=20,max_r=90)
     # ball has to be center of screen in x achsis, tolerance 20px
-    pid_x = ctrl.PIDControler(width//2,1,0.1,0.0,20)
+    pid_x = ctrl.PIDControler(width//2,1,0.1,0.0,40)
     # ball has to be center of screen in y achsis,tolerance 20px
     pid_y = ctrl.PIDControler(height//2,1,0.1,0.0,20)
     # radius has to be 30, tolerance 1px
@@ -91,7 +91,8 @@ def main():
                     img = cv2.GaussianBlur(img, (17, 17), 0)
                     output_pid_x = pid_x.compute(ball_tracker.circle_x)
                     print(output_pid_x)
-                    output_pid_x = int(px_to_angle(output_pid_x))
+                    output_pid_x = int(px_to_angle(output_pid_x))#                    output_pid_x = int(ball_tracker.dx/10)
+
 
                     if not pid_x.reached_setpoint(ball_tracker.circle_x):
                         angle += output_pid_x

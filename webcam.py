@@ -13,7 +13,7 @@ else:
 if frame is None:
     sys.exit()
 
-ball_tracker = bt.BallTracker()
+ball_tracker = bt.BallTracker(min_r=10,max_r=50)
 
 #img = cv2.imread("reneder.jpg")
 #if img is None:

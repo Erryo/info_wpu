@@ -1,6 +1,8 @@
+from numpy import ma
 import pygame as pg
 from djitellopy import tello
 import sys
+import balltracker as bt
 import cv2
 
 
@@ -29,7 +31,6 @@ def main():
 
     #die Drohne starten
     drone.streamon()
-    drone.takeoff()
 
     # Starte pygame
     # pygame ist eine Python-Bibliothek, die für Spiele verwendet wird,
@@ -62,15 +63,24 @@ def main():
         batt = drone.get_battery()
         temp = drone.get_temperature()
 
+        ball_tracker = bt.BallTracker(min_r=10,max_r=50)
         # Ein Objekt mit dem Bild und Details der Drohne abrufen
         frame_read = drone.get_frame_read()
         # auf das Bild zugreifen
         img = frame_read.frame
         if img is not None: # sicherstellen, dass das Bild korrekt empfangen wurde
-            img = cv2.transpose(img)   # optional, Tello-Feed könnte gedreht sein
+            img = cv2.flip(img,1)
+            img = cv2.transpose(img)   # optional, Tello feed may be rotated
+            success, processed_frame, mask = ball_tracker.find(img)
 
             # optional, Tello und Pygame könnten unterschiedliche Formate nutzen
             #frame_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            keys = pg.key.get_pressed() 
+            if keys[pg.K_a]:            
+                img = mask
+            if keys[pg.K_d]:            
+                img =processed_frame
+
             frame_surface = pg.surfarray.make_surface(img)
 
             # zeichne das Bild an Position 0,0 auf den Bildschirm
@@ -86,7 +96,6 @@ def main():
     # schließe das Fenster, das wir für den Kamerastream genutzt haben
     pg.quit()
     # lande die Drohne, nachdem wir die Schleife beendet haben
-    drone.land()
     # beende das Python-Programm
     sys.exit()
 
