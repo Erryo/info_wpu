@@ -5,7 +5,10 @@ drone = tello.Tello()
 
 
 def center_over_pad(pad):
+    print("Centering: yaw before:",drone.get_yaw())
     drone.go_xyz_speed_yaw_mid(0,0,20,20,0,pad,pad)
+#    drone.go_xyz_speed_mid(0,0,20,20,pad)
+    print("Centering: yaw after:",drone.get_yaw())
 
 # --------------------------
 #     HAUPTPROGRAMM
@@ -19,7 +22,7 @@ print("Batterie:", drone.get_battery(), "%")
 
 # Mission Pads aktivieren
 drone.enable_mission_pads()
-drone.set_mission_pad_detection_direction(2)  # 2 = beide
+drone.set_mission_pad_detection_direction(0)  # 2 = beide
 
 # Start
 drone.takeoff()
@@ -29,7 +32,8 @@ print("Warten auf Mission Pad 1 ...")
 pad = drone.get_mission_pad_id()
 print(f"Pad {pad} erkannt!")
 
-drone.go_xyz_speed_yaw_mid(0,0,20,20,0,pad,pad)
+#drone.go_xyz_speed_yaw_mid(0,0,20,20,0,pad,pad)
+center_over_pad(pad)
 
 last_pad = pad
 print("Starte Vorwärts-Navigation...\n")

@@ -8,7 +8,10 @@ import imutils
 
 class ColorThreshold():
 
-    def __init__(self,h_min1=0, h_max1=10, h_min2=160, h_max2=180, s_min=0, s_max=255, v_min=50, v_max=255):
+    def __init__(self,h_min1=0, h_max1=10,
+                 h_min2=160, h_max2=180,
+                 s_min=100, s_max=255,
+                 v_min=50, v_max=255):
         # Lower red range
         self.h_min1 = h_min1
         self.h_max1 = h_max1
@@ -51,27 +54,10 @@ class BallTracker:
         frame = np.copy(frame)
         self.height, self.width, c  = frame.shape
 
-        frame = cv2.GaussianBlur(frame, (13, 13), 0)
-        #        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        blurred = cv2.GaussianBlur(frame, (3, 3), 0)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 #        hsv = cv2.cvtColor(blurred, cv2.COLOR_RGB2HSV)# Für Drohne
 
-        lab= cv2.cvtColor(frame, cv2.COLOR_RGB2Lab)
-        l_channel, a, b = cv2.split(lab)
-        
-        # Applying CLAHE to L-channel
-        # feel free to try different values for the limit and grid size:
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        cl = clahe.apply(l_channel)
-        
-        # merge the CLAHE enhanced L-channel with the a and b channel
-        limg = cv2.merge((cl,a,b))
-        
-        # Converting image from LAB Color model to BGR color spcae
-        enhanced_img = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
-        
-        # Stacking the original image with the enhanced image
-        #        result = np.hstack((blurred, enhanced_img))
-        hsv =  cv2.cvtColor(enhanced_img, cv2.COLOR_RGB2HSV)
 
         lower1, upper1 = self.color_thr.getLowerRed()
         lower2, upper2 = self.color_thr.getUpperRed()
@@ -84,7 +70,6 @@ class BallTracker:
         mask1 = cv2.inRange(hsv, lower1, upper1)
         mask2 = cv2.inRange(hsv, lower2, upper2)
 
-        mask = cv2.bitwise_or(mask1, mask2)
         mask = cv2.bitwise_or(mask1, mask2)
 
         mask = cv2.erode(mask, self.kernel, iterations=2)

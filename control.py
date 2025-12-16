@@ -16,6 +16,7 @@ class PIDControler():
         self.integral = 0
         self.last_calc = time.time()
         self.past_variables =[pv]
+        self.past_Integral =[0]
         self.times=[0.0]
         self.dt = 0.0
 
