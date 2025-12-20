@@ -1,6 +1,7 @@
 
 import cv2
 import sys
+import imgproc as imp
 
 (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
 
@@ -51,6 +52,7 @@ def main() :
     if not ok:                                                      
         print("Cannot read video file")                             
         sys.exit()                                                  
+
                                                                     
     # Define an initial bounding box                                
     bbox = (287, 23, 86, 320)                                       
@@ -68,6 +70,7 @@ def main() :
                                                                     
         timer = cv2.getTickCount()                                  
                                                                     
+                                                                     
         ok, bbox = tracker.update(frame)                            
                                                                     
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer) 
@@ -87,7 +90,7 @@ def main() :
                 2                                                   
             )                                                       
                                                                     
-        cv2.putTextjj(                                                
+        cv2.putText(                                                
             frame,                                                  
             tracker_type + " Tracker",                              
             (100, 20),                                              
@@ -116,109 +119,4 @@ def main() :
 if __name__ == '__main__':
 
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

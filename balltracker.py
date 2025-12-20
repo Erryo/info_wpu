@@ -1,12 +1,17 @@
 # Code modified from github.com/tanat44/PingpongBallTracker
 
-import re
 import cv2
 import numpy as np
-import imutils
-
+import imgproc as imp
 
 class ColorThreshold():
+    def __init__(self,red_min,other_max,red_max=255, other_min=0): 
+        self.red_min = red_min
+        self.red_max = red_max
+        self.other_min = other_min
+        self.other_max = other_max
+
+class ColorThresholdHSV():
 
     def __init__(self,h_min1=0, h_max1=10,
                  h_min2=160, h_max2=180,
@@ -38,7 +43,7 @@ class BallTracker:
         self.frame=None
         self.lower_red1 = np.array([0, 100, 100])
         self.kernel = np.ones((3, 3), np.uint8)
-        self.color_thr = ColorThreshold()
+        self.color_thr = ColorThreshold(150,120)
         self.target = target
         self.dx = 0
         self.dy = 0
@@ -50,30 +55,25 @@ class BallTracker:
         self.min_rad =min_r
         self.max_rad = max_r 
     # frame has to be in rgb
+    #
+    def filter(self,frame):
+        blurred = cv2.GaussianBlur(frame, (3, 3), 0)                
+##        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)            
+#        hsv = cv2.cvtColor(blurred, cv2.COLOR_RGB2HSV)# Für Drohne 
+                                                                    
+        b,g,r = cv2.split(blurred)                                  
+        mask = imp.filter_col(130,180,r,g,b)                        
+                                                                    
+                                                                    
+#        mask = cv2.erode(mask, self.kernel, iterations=2)           
+#        mask = cv2.dilate(mask, self.kernel, iterations=2)          
+        return mask
     def find(self, frame):
         frame = np.copy(frame)
         self.height, self.width, c  = frame.shape
-
-        blurred = cv2.GaussianBlur(frame, (3, 3), 0)
-        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-#        hsv = cv2.cvtColor(blurred, cv2.COLOR_RGB2HSV)# Für Drohne
+        mask = self.filter(frame)
 
 
-        lower1, upper1 = self.color_thr.getLowerRed()
-        lower2, upper2 = self.color_thr.getUpperRed()
-        
-        lower1 = np.array(lower1, dtype=np.uint8)
-        upper1 = np.array(upper1, dtype=np.uint8)
-        lower2 = np.array(lower2, dtype=np.uint8)
-        upper2 = np.array(upper2, dtype=np.uint8)
-
-        mask1 = cv2.inRange(hsv, lower1, upper1)
-        mask2 = cv2.inRange(hsv, lower2, upper2)
-
-        mask = cv2.bitwise_or(mask1, mask2)
-
-        mask = cv2.erode(mask, self.kernel, iterations=2)
-        mask = cv2.dilate(mask, self.kernel, iterations=2)
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
             cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
