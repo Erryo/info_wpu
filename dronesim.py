@@ -48,35 +48,72 @@ drone_state = {
 state_lock = threading.Lock()
 
 #absolute
-def go_dir(target,key):
-
-    pid = ctrl.PIDControler(target,0.0001,0.02,0.001,1)
+def go_coord(target,key):
+    pid = ctrl.PIDControler(target,1/70,0,0,0.001)
 
     while not pid.reached_setpoint(drone_state[key]):
         value = pid.compute(drone_state[key])
         variability = random.uniform(0.9,1.1)
-        value *= variability 
+        value *= variability
         drone_state[key] += value
         time.sleep(random.uniform(0.003,0.009))
 
-def rotate_pid(target,key):                                 
-    pid = ctrl.PIDControler(target,1/70,1/10000,0,0.01) 
-    while not pid.reached_setpoint(drone_state[key]):   
-        value = pid.compute(drone_state[key])           
-        variability = random.uniform(0.98,1.02)           
-        value *= variability                            
-        drone_state[key] += value                       
-        time.sleep(random.uniform(0.003,0.009))         
-                                                        
-                                                        
+def go_point(point):
+    print("going point x")
+    go_coord(point[0],"x")
+    print("going point z")
+    go_coord(point[1],"z")
+
+def go_point_diagonal(point):
+    pid_x = ctrl.PIDControler(point[0],1/70,0,0,0.001)
+    pid_z = ctrl.PIDControler(point[1],1/70,0,0,0.001)
+
+    while (not pid_x.reached_setpoint(drone_state["x"])) or (not pid_z.reached_setpoint(drone_state["z"])):
+        if not pid_x.reached_setpoint(drone_state["x"]):
+            value = pid_x.compute(drone_state["x"]) 
+            variability = random.uniform(0.9,1.1) 
+            value *= variability                  
+            drone_state["x"] += value             
+        if not pid_z.reached_setpoint(drone_state["z"]): 
+            value = pid_z.compute(drone_state["z"])      
+            variability = random.uniform(0.9,1.1)        
+            value *= variability                         
+            drone_state["z"] += value                    
+
+        time.sleep(random.uniform(0.003,0.009))
+
+
+
+def calc_target(amount):
+    x,h,z = drone_state["x"],drone_state["h"],drone_state["z"] 
+    i_vector = calc_rotation_vector()                          
+    target_delta = [i_vector[0]*amount,i_vector[1]*amount]     
+    target = [target_delta[0]+x,target_delta[1]+z]             
+    return target
+#relative to current yaw(orientation)
+
+def go_front(amount):
+    print("going front")
+    target = calc_target(amount)
+    go_point_diagonal(target)
+
+
+def rotate_pid(target,key):
+    pid = ctrl.PIDControler(target,1/70,1/10000,0,0.01)
+    while not pid.reached_setpoint(drone_state[key]):
+        value = pid.compute(drone_state[key])
+        variability = random.uniform(0.98,1.02)
+        value *= variability
+        drone_state[key] += value
+        time.sleep(random.uniform(0.003,0.009))
 
 def rotate_pid_delta(target,key):
     target = drone_state[key]+target
     rotate_pid(target=target,key=key)
 #absolute
-def go_dir_delta(target,key: str):
+def go_coord_delta(target,key: str):
     target = drone_state[key]+target
-    go_dir(target=target,key=key)
+    go_coord(target=target,key=key)
 
 
 def handle_annoying(cmd: str):
@@ -86,24 +123,27 @@ def handle_annoying(cmd: str):
     #relative
     x = int(strs[1])
     if strs[0] == "up":
-        go_dir_delta(x,"y")
+        go_coord_delta(x,"y")
     if strs[0] == "down":
-        go_dir_delta(-x,"y")
-    if strs[0] == "right":
-        go_dir_delta(x,"y")
+        go_coord_delta(-x,"y")
+    if strs[0] == "forward":
+        go_front(x)
+    if strs[0] == "back":
+        go_front(-x)
+#        go_coord_delta(x,"x")
     if strs[0] == "cw":
         rotate_pid_delta(x,"yaw")
     if strs[0] == "ccw":
         rotate_pid_delta(-x,"yaw")
 
 
-def calc_rotation_vector():
+def calc_rotation_vector(): # aka. i_vectior
     with state_lock:
         yaw = drone_state['yaw']
-        print("yaw:",yaw)
+        #print("yaw:",yaw)
         yaw = yaw*(math.pi/180)
-        print("yaw rad:",yaw)
-    return [math.sin(yaw),math.cos(yaw)]
+        #print("yaw rad:",yaw)
+    return [math.cos(yaw),math.sin(yaw)]
 
 
 
@@ -127,12 +167,12 @@ def command_server():
 
         elif cmd == "takeoff":
             with state_lock:
-                go_dir(4,'h')
+                go_coord(4,'h')
             sock.sendto(b"ok", addr)
 
         elif cmd == "land":
             with state_lock:
-                go_dir(0,'h')
+                go_coord(0,'h')
             sock.sendto(b"ok", addr)
 
         else:
@@ -180,23 +220,43 @@ def state_server():
 
 def sim_loop():
     camera = rl.Camera3D()
-    camera.position = rl.Vector3(drone_state['x'],drone_state['h'],drone_state['z']) 
-    camera.target = rl.Vector3(drone_state['x']+1,drone_state['h'],drone_state['z']) 
+    camera.position = rl.Vector3(drone_state['x'],drone_state['h'],drone_state['z'])
+    camera.target = rl.Vector3(drone_state['x']+1,drone_state['h'],drone_state['z'])
     camera.up = rl.Vector3(0,1,0)
     camera.fovy = 56.6
     camera.projection = rl.CAMERA_PERSPECTIVE
 
 
+    mesh_drone = rl.gen_mesh_sphere(0.5,4,4)
+    model_drone = rl.load_model_from_mesh(mesh_drone)
+    
     mesh_cube = rl.gen_mesh_cube(0.7,1,1)
     model_cube = rl.load_model_from_mesh(mesh_cube)
 
+    pov = "drone"
+
     while not rl.window_should_close():
+        if rl.is_key_pressed(rl.KEY_ENTER) and not rl.is_key_pressed_repeat(rl.KEY_ENTER):
+            print("enter pressed")
+            if pov == "drone":
+                pov = "top"
+            elif pov == "top":
+                pov = "drone"
+
+
         with state_lock:
             x,h,z = drone_state['x'],drone_state['h'],drone_state['z']
-        rot_v = calc_rotation_vector()
-        camera.position = rl.Vector3(x,h,z) 
-        camera.target = rl.Vector3(x+rot_v[0],h,z+rot_v[1]) 
-                                                                                     
+
+        if pov == "top":
+            camera.position = rl.Vector3(1,25,1)
+            camera.target = rl.Vector3(0,0,0)
+        if pov == "drone":
+            rot_v = calc_rotation_vector()
+            camera.position = rl.Vector3(x,h,z)
+            camera.target = rl.Vector3(x+rot_v[0],h,z+rot_v[1])
+
+        t = calc_target(2)
+
 
         rl.clear_background(rl.WHITE)
         rl.begin_drawing()
@@ -204,7 +264,9 @@ def sim_loop():
         rl.begin_mode3d(camera)
 
         rl.draw_grid(60,1)
+        rl.draw_model(model_drone,rl.Vector3(x,h,z),1,rl.BLUE)
 
+        rl.draw_line3d(rl.Vector3(x,h,z),rl.Vector3(t[0],h,t[1]),rl.RED)
         rl.draw_model(model_cube,rl.Vector3(10,1,0),1,rl.RED)
         rl.draw_model(model_cube,rl.Vector3(-10,1,0),1,rl.BLUE)
         rl.draw_model(model_cube,rl.Vector3(0,1,10),1,rl.ORANGE)

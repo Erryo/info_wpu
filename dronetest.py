@@ -1,4 +1,4 @@
-from time import sleep
+import time 
 from djitellopy import tello
 
 drone = tello.Tello(host="127.0.0.1")
@@ -9,9 +9,15 @@ drone.takeoff()
 
 drone.get_height()
 
-drone.rotate_clockwise(90)
-drone.rotate_counter_clockwise(60)
+drone.rotate_clockwise(45)
 
-while True:
-    sleep(0.1)
-drone.land()
+time.sleep(2)
+drone.move_forward(2)
+time.sleep(2)
+drone.move_forward(2)
+time.sleep(2)
+drone.move_back(2)
+time.sleep(2)
+drone.move_back(2)
+
+time.sleep(4)
