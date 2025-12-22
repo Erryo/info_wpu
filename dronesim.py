@@ -18,7 +18,6 @@ CMD_PORT_drone = 8000
 STATE_PORT_drone = 8001
 HOST = "0.0.0.0"
 
-DEFAULT_SPEED = 10
 # Where to send state (DJITelloPy listens locally)
 CLIENT_IP = "127.0.0.1"
 TIME_OUT=15 #s
@@ -84,21 +83,24 @@ mp_1 = MissionPad(0,0,0,1)
 mp_2 = MissionPad(4,0,4,2)      
                                 
 mission_pads = [mp_1,mp_2]      
+mission_pads_on = False
+mission_pads_detection = 0
+default_speed = 1
 state_lock = threading.Lock()
 
 #absolute
-def go_coord(target,key):
+def go_coord(target,key,speed = default_speed):
     pid = ctrl.PIDControler(target,1/70,0,0,0.001)
 
     while not pid.reached_setpoint(drone_state[key]):
         value = pid.compute(drone_state[key])
         variability = random.uniform(0.9,1.1)
-        value *= variability
+        value *= variability*speed
         drone_state[key] += value
         time.sleep(random.uniform(0.003,0.009))
 
 
-def go_point_diagonal(point: Point3D,speed=1):
+def go_point_diagonal(point: Point3D,speed=default_speed):
     pid_x = ctrl.PIDControler(point.x,1/70,0,0,0.001)
     pid_h = ctrl.PIDControler(point.y,1/70,0,0,0.001)
     pid_z = ctrl.PIDControler(point.z,1/70,0,0,0.001)
@@ -138,7 +140,7 @@ def go_point_diagonal(point: Point3D,speed=1):
 
     print("x:",drone_state["x"]," y:",drone_state["h"]," z:",drone_state["z"])
 
-def go_point_mid(p: Point3D,id: int,speed: int = 1):
+def go_point_mid(p: Point3D,id: int,speed: int = default_speed):
     mp = MissionPad(0,0,0,0)
     for pad in mission_pads:
         if pad.id == id :
@@ -151,7 +153,7 @@ def go_point_mid(p: Point3D,id: int,speed: int = 1):
 
 
 # Relative to drone
-def go_point_diagonal_delta(p: Point3D,speed=1):
+def go_point_diagonal_delta(p: Point3D,speed=default_speed):
     x,h,z = drone_state["x"],drone_state["h"],drone_state["z"]
     target = Point3D(x=p.x+x,y=p.y+h,z=p.z+z)
     print("target is x:",target.x," y:",target.y," z:",target.z)
@@ -167,18 +169,18 @@ def calc_target_yaw(amount,yaw_offset=0):
     return target
 #relative to current yaw(orientation)
 
-def go_normal_2D(amount,yaw_offset=0):
+def go_normal_2D(amount,yaw_offset=0,speed=default_speed):
     print("going normal:",yaw_offset+drone_state["yaw"])
     target = calc_target_yaw(amount,yaw_offset)
-    go_point_diagonal(target)
+    go_point_diagonal(target,speed=default_speed)
 
 
-def rotate_pid(target,key):
+def rotate_pid(target,key,speed=default_speed):
     pid = ctrl.PIDControler(target,1/70,1/10000,0,0.01)
     while not pid.reached_setpoint(drone_state[key]):
         value = pid.compute(drone_state[key])
         variability = random.uniform(0.98,1.02)
-        value *= variability
+        value *= variability*speed
         drone_state[key] += value
         time.sleep(random.uniform(0.003,0.009))
 
@@ -223,45 +225,72 @@ def aabb_2d_check(
     )
 
 
-def handle_annoying(cmd: str):
+def handle_variable(cmd: str):
+    global mission_pads_detection,default_speed
     if not in_air:
         return b"error not in air"
     strs = cmd.split(" ")
     #relative
     x = int(strs[1])
-    if strs[0] == "up":
-        go_coord_delta(x,"y")
-    if strs[0] == "down":
-        go_coord_delta(-x,"y")
-    if strs[0] == "forward":
-        go_normal_2D(x)
-    if strs[0] == "back":
-        go_normal_2D(-x)
-    if strs[0] == "right":
-        go_normal_2D(x,90)
-    if strs[0] == "left":
-        go_normal_2D(-x,90)
-    if strs[0] == "cw":
-        rotate_pid_delta(x,"yaw")
-    if strs[0] == "ccw":
-        rotate_pid_delta(-x,"yaw")
-    if strs[0] == "go":
-        if len(strs) == 5:
-            x= int(strs[1])
-            z= int(strs[2])
-            h= int(strs[3])
-            print("Going:x",x," y",h," z:",z)
-            speed= int(strs[4])
-            go_point_diagonal_delta(Point3D(x=x,y=h,z=z),speed)
-        if len(strs) == 6:                                      
-            x= int(strs[1])                                     
-            z= int(strs[2])                                     
-            h= int(strs[3])                                     
-            print("Going:x",x," y",h," z:",z)                   
-            speed= int(strs[4])                                 
-            mid=int(strs[5].removeprefix("m"))                          
-            print("mid is:",mid)
-            go_point_mid(Point3D(x=x,y=h,z=z),mid,speed)
+    match strs[0]:
+        case "mdirection":
+            mission_pads_detection = x
+        case "speed":
+            default_speed = x
+        case "up":
+            go_coord_delta(x,"h")
+        case "down":
+            go_coord_delta(-x,"h")
+        case "forward":
+            go_normal_2D(x)
+        case "back":
+            go_normal_2D(-x)
+        case "right":
+            go_normal_2D(x,90)
+        case "left":
+            go_normal_2D(-x,90)
+        case "cw":
+            rotate_pid_delta(x,"yaw")
+        case "ccw":
+            rotate_pid_delta(-x,"yaw")
+        case "rc":
+                left_right= int(strs[1])
+                forward_back= int(strs[2])
+                up_down= int(strs[3])
+                yaw= int(strs[3])
+
+                if yaw != 0:
+                    rotate_pid_delta(yaw,"yaw")
+                #forward 
+                if forward_back != 0:
+                    go_normal_2D(forward_back)
+                #lr 
+                if left_right != 0:
+                    go_normal_2D(left_right,90)
+                if up_down != 0:
+                    go_coord_delta(up_down,"h")
+
+
+                
+
+
+        case "go":
+            if len(strs) == 5:
+                x= int(strs[1])
+                z= int(strs[2])
+                h= int(strs[3])
+                print("Going:x",x," y",h," z:",z)
+                speed= int(strs[4])
+                go_point_diagonal_delta(Point3D(x=x,y=h,z=z),speed)
+            if len(strs) == 6:                                      
+                x= int(strs[1])                                     
+                z= int(strs[2])                                     
+                h= int(strs[3])                                     
+                print("Going:x",x," y",h," z:",z)                   
+                speed= int(strs[4])                                 
+                mid=int(strs[5].removeprefix("m"))                          
+                print("mid is:",mid)
+                go_point_mid(Point3D(x=x,y=h,z=z),mid,speed)
      
 
     return b"ok"
@@ -276,7 +305,7 @@ def handle_annoying(cmd: str):
 # Command server thread
 # --------------------
 def command_server():
-    global in_air,last_keep_alive
+    global in_air,last_keep_alive,mission_pads_on,mission_pads_detection
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((HOST, COMMAND_PORT))
 
@@ -287,34 +316,36 @@ def command_server():
         cmd = data.decode("utf-8").strip()
         print(f"[CMD] {addr}: {cmd}")
 
-        # Basic command handling
-        if cmd == "command":
-            sock.sendto(b"ok", addr)
 
-        elif cmd == "takeoff":
-            if in_air:
-                sock.sendto(b"error", addr)
-                return
-            with state_lock:
+        state_lock.acquire_lock()
+        match (cmd):
+            case "command":
+                sock.sendto(b"ok", addr)
+            case "takeoff":
+                if in_air:
+                    sock.sendto(b"error", addr)
+                    return
                 go_coord(4,'h')
                 in_air = True
-            sock.sendto(b"ok", addr)
+                sock.sendto(b"ok", addr)
 
-        elif cmd == "keepalive":
-            last_keep_alive = time.perf_counter()
-        elif cmd == "land" or cmd == "emergency":
-            if not in_air:
-                sock.sendto(b"error", addr)
-                return
-            with state_lock:
+            case "keepalive":
+                last_keep_alive = time.perf_counter()
+            case "mon":
+                mission_pads_on = True
+            case "moff":
+                mission_pads_on = False
+            case "land" | "emergency":
+                if not in_air:
+                      sock.sendto(b"error", addr)
+                      return
                 go_coord(0,'h')
                 in_air = False
-            sock.sendto(b"ok", addr)
-
-        else:
-            with state_lock:
-                res = handle_annoying(cmd)
-            sock.sendto(res, addr)
+                sock.sendto(b"ok", addr)
+            case _:
+                res = handle_variable(cmd)
+                sock.sendto(res, addr)
+        state_lock.release_lock()
 
 def i(v):
     return int(round(v))
@@ -357,7 +388,7 @@ def state_server():
 
 
 def sim_loop():
-    global in_air,mission_pads
+    global in_air,mission_pads,mission_pads_on
     camera = rl.Camera3D()
     camera.position = rl.Vector3(drone_state['x'],drone_state['h'],drone_state['z'])
     camera.target = rl.Vector3(drone_state['x']+1,drone_state['h'],drone_state['z'])
@@ -388,7 +419,8 @@ def sim_loop():
                 go_coord(0,"h")
                 in_air = False
 
-        detect_mission_pad_underneath()
+        if mission_pads_on:
+            detect_mission_pad_underneath()
 
         ## Sim log:wic
         if rl.is_key_pressed(rl.KEY_ENTER) and not rl.is_key_pressed_repeat(rl.KEY_ENTER):
