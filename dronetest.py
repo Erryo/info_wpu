@@ -1,3 +1,4 @@
+import datetime
 import time 
 from djitellopy import tello
 
@@ -7,17 +8,11 @@ drone.connect()
 
 drone.takeoff()
 
-drone.get_height()
 
-drone.rotate_clockwise(45)
+print(drone.get_mission_pad_id())
+drone.go_xyz_speed(4,4,0,1)
+print(drone.get_mission_pad_id())
 
-time.sleep(2)
-drone.move_forward(2)
-time.sleep(2)
-drone.move_forward(2)
-time.sleep(2)
-drone.move_back(2)
-time.sleep(2)
-drone.move_back(2)
-
+#time_start = time.perf_counter()
+#print("time_passed:",datetime.timedelta(seconds=time.perf_counter()-time_start))
 time.sleep(4)
