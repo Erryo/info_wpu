@@ -70,6 +70,7 @@ class Point3D:
 
 class MissionPad :
     origin: Point3D
+    vector: Point3D# Vector from origin(of Pad) to Point3D
     id: int
     
     def __init__(self,x,y,z,id) -> None:
@@ -132,11 +133,22 @@ def go_point_diagonal(point: Point3D,speed=1):
             drone_state["z"] += value
         elif not z_done:
             numb_pids_done += 1
-            z_done = True
 
         time.sleep(random.uniform(0.003,0.009))
 
     print("x:",drone_state["x"]," y:",drone_state["h"]," z:",drone_state["z"])
+
+def go_point_mid(p: Point3D,id: int,speed: int = 1):
+    mp = MissionPad(0,0,0,0)
+    for pad in mission_pads:
+        if pad.id == id :
+            mp = pad
+
+    x,h,z = mp.origin.x,mp.origin.y,mp.origin.z
+    target = Point3D(x=p.x+x,y=p.y+h,z=p.z+z)                    
+    print("target is x:",target.x," y:",target.y," z:",target.z) 
+    go_point_diagonal(target,speed)                              
+
 
 # Relative to drone
 def go_point_diagonal_delta(p: Point3D,speed=1):
@@ -241,7 +253,16 @@ def handle_annoying(cmd: str):
             print("Going:x",x," y",h," z:",z)
             speed= int(strs[4])
             go_point_diagonal_delta(Point3D(x=x,y=h,z=z),speed)
-
+        if len(strs) == 6:                                      
+            x= int(strs[1])                                     
+            z= int(strs[2])                                     
+            h= int(strs[3])                                     
+            print("Going:x",x," y",h," z:",z)                   
+            speed= int(strs[4])                                 
+            mid=int(strs[5].removeprefix("m"))                          
+            print("mid is:",mid)
+            go_point_mid(Point3D(x=x,y=h,z=z),mid,speed)
+     
 
     return b"ok"
 
