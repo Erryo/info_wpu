@@ -42,7 +42,7 @@ class Tello:
     TELLO_IP = '192.168.10.1'  # Tello IP address
 
     # Video stream, server socket
-    VS_UDP_IP = '0.0.0.0'
+    VS_UDP_IP = '0.0.0.0' 
     VS_UDP_PORT = 11111
 
     CONTROL_UDP_PORT = 8889
