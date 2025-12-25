@@ -30,12 +30,12 @@ def main():
     global Track_Ball
 
     drone_conn = True
-    drone = tello.Tello()
+    drone = tello.Tello(host="127.0.0.1")
     print(drone)
     try:
         drone.connect()
         drone.streamon()
-#        drone.takeoff()
+        drone.takeoff()
     except:
         drone_conn = False
         print("Error",drone,type(drone))
@@ -129,6 +129,7 @@ def do_input():
         vels[R] -= 10 *Speed
     if keys[pg.K_RIGHT]:  
         vels[R] += 10 * Speed
+
     if keys[pg.K_CAPSLOCK]:
         Track_Ball = not Track_Ball
         print("Track_Ball is", Track_Ball)

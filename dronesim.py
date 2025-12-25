@@ -1,4 +1,5 @@
 import socket
+from cv2.typing import Point
 import raylibpy as rl
 import threading
 import ctypes
@@ -113,6 +114,58 @@ default_speed = 1
 
 state_lock = threading.Lock()
 
+def rc_dir(velocity:float,key:str):
+    distance = velocity * 0.001 
+    target = drone_state[key]+distance
+    while True: 
+        with state_lock:
+            current_val = drone_state[key]
+            if not reached_coord(current_val,target,0.06):
+                drone_state[key] += distance/10
+            else: 
+                return
+    
+def rc_normal_2D(velocity: float,offset:int = 0):
+    #TIME_BTW_RC_CONTROL_COMMANDS = 0.001  # in seconds
+    # top speed: 100cm/s
+    # t = 0.001 s
+    # d = 100cm/s * 0.001s = 0.1 cm
+    #
+    # 0.001s -?> 0.06 frames
+    # 60 fps v = f/s
+    # f = v * s = 60 fps * 0.001s = 0.06 frames
+    # v = 1.667 cm/frame
+
+    distance = velocity * 0.001 
+    target = calc_target_yaw(distance,offset)
+    x_done = False
+    y_done = False
+    z_done = False
+    while not ( x_done and y_done and z_done) :
+        with state_lock:
+            if not reached_coord(drone_state['h'],target.y,0.06):
+                drone_state['h'] += distance/10
+            else:
+                y_done= True
+
+            if not reached_coord(drone_state['x'],target.x,0.06):
+                drone_state['x'] += distance/10 
+            else:
+                x_done= True
+
+            if not reached_coord(drone_state['z'],target.z,0.06):
+                drone_state['z'] += distance/10 
+            else:
+                z_done= True
+
+
+def reached_coord(p:float,t:float,margin:float) -> bool:
+    if p == t:
+        return True
+    return p < t + margin and p > t - margin
+
+
+
 #absolute
 def go_coord(target,key,speed = default_speed):
     pid = ctrl.PIDControler(target,1/70,0,0,0.001)
@@ -145,7 +198,7 @@ def go_point_diagonal(point: Point3D,speed=default_speed):
             elif not x_done:
                 numb_pids_done += 1
                 x_done = True
-    
+
             if not pid_h.reached_setpoint(drone_state["h"]):
                 value = pid_h.compute(drone_state["h"])
                 variability = random.uniform(0.9,1.1)
@@ -154,7 +207,7 @@ def go_point_diagonal(point: Point3D,speed=default_speed):
             elif not y_done:
                 numb_pids_done += 1
                 y_done = True
-    
+
             if not pid_z.reached_setpoint(drone_state["z"]):
                 value = pid_z.compute(drone_state["z"])
                 variability = random.uniform(0.9,1.1)
@@ -287,18 +340,22 @@ def handle_variable(cmd: str):
                 left_right= int(strs[1])
                 forward_back= int(strs[2])
                 up_down= int(strs[3])
-                yaw= int(strs[3])
+                yaw= int(strs[4])
 
                 if yaw != 0:
-                    rotate_pid_delta(yaw,"yaw")
+                    rc_dir(yaw,"yaw")
+#                    rotate_pid_delta(yaw,"yaw")
                 #forward
                 if forward_back != 0:
-                    go_normal_2D(forward_back)
+                    rc_normal_2D(forward_back)
+                    #go_normal_2D(forward_back)
                 #lr
                 if left_right != 0:
-                    go_normal_2D(left_right,90)
+                    rc_normal_2D(left_right,90)
+                    #go_normal_2D(left_right,90)
                 if up_down != 0:
-                    go_coord_delta(up_down,"h")
+                    rc_dir(up_down,"h")
+                    #go_coord_delta(up_down,"h")
 
 
         case "go":
@@ -341,7 +398,7 @@ def command_server():
     while True:
         data, addr = sock.recvfrom(1024)
         cmd = data.decode("utf-8").strip()
-        print(f"[CMD] {addr}: {cmd}")
+#        print(f"[CMD] {addr}: {cmd}")
 
 
         match (cmd):
@@ -490,8 +547,8 @@ def sim_loop(state: SimState):
         drone_cam.position = rl.Vector3(x, h, z)
         drone_cam.target   = rl.Vector3(x + rot_v[0], h, z + rot_v[1])
 
-        top_cam.position = rl.Vector3(0.1, 25, 0.1)
-        top_cam.target   = rl.Vector3(0, 0, 0)
+        top_cam.position = rl.Vector3(x+1, h+25, z+1)
+        top_cam.target   = rl.Vector3(x, h,z)
 
 
 
@@ -531,6 +588,7 @@ def sim_loop(state: SimState):
         draw_world(state)
 
         rl.end_mode3d()
+        rl.draw_text(f"x:{round(drone_state['x'],3)};h:{round(drone_state['h'],3)};z:{round(drone_state['z'],3)}",0,0,24,rl.RED)
         rl.end_drawing()
 
     rl.close_window()
@@ -539,13 +597,13 @@ def video_stream_server(): # Thanks ClaudeAI!!!!!!!!!!!!!    :)))))))))))
     global stream_state, video_frame, video_lock
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     addr = (CLIENT_IP, VS_PORT)
-    
+
     print("Video stream server started on UDP 11111")
-    
+
     frame_count = 0
     codec = None
     last_keyframe = 0
-    
+
     while True:
         if not stream_state:
             if codec is not None:
@@ -561,7 +619,7 @@ def video_stream_server(): # Thanks ClaudeAI!!!!!!!!!!!!!    :)))))))))))
                 last_keyframe = 0
             time.sleep(0.05)
             continue
-        
+
         # Initialize codec when stream starts
         if codec is None:
             codec = av.CodecContext.create("libx264", "w")
@@ -589,32 +647,32 @@ def video_stream_server(): # Thanks ClaudeAI!!!!!!!!!!!!!    :)))))))))))
                 codec = None
                 time.sleep(1)
                 continue
-        
+
         # Get frame
         with video_lock:
             if video_frame is None:
                 time.sleep(0.01)
                 continue
             frame = video_frame.copy()
-        
+
         try:
             # Convert BGR to VideoFrame
             av_frame = av.VideoFrame.from_ndarray(frame, format="bgr24")
             av_frame = av_frame.reformat(codec.width, codec.height, codec.pix_fmt)
-            
+
             # Set PTS with proper timebase
             av_frame.pts = frame_count * 3000  # 90000/30 = 3000 per frame
-            
+
             # Force keyframe every 30 frames
             if frame_count - last_keyframe >= 30:
                 av_frame.pict_type = av.video.frame.PictureType.I
                 last_keyframe = frame_count
-            
+
             frame_count += 1
-            
+
             # Encode
             packets = codec.encode(av_frame)
-            
+
             # Add after encoding in video_stream_server:
             if packets:
                 total_bytes = sum(len(bytes(p)) for p in packets)
@@ -633,26 +691,26 @@ def video_stream_server(): # Thanks ClaudeAI!!!!!!!!!!!!!    :)))))))))))
                         print(f"Warning: Packet too large ({len(data)} bytes), splitting")
                         for i in range(0, len(data), MAX_DGRAM):
                             sock.sendto(data[i:i+MAX_DGRAM], addr)
-            
+
         except Exception as e:
             print(f"Video encoding error: {e}")
             import traceback
             traceback.print_exc()
             codec = None
             continue
-        
+
         time.sleep(1 / 30)
 def video_stream_server_reduced():
     global stream_state, video_frame, video_lock
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     addr = (CLIENT_IP, VS_PORT)
-    
+
     print("Video stream server started on UDP 11111")
-    
+
     frame_count = 0
     codec = None
     last_keyframe = 0
-    
+
     while True:
         if not stream_state:
             if codec is not None:
@@ -667,7 +725,7 @@ def video_stream_server_reduced():
                 last_keyframe = 0
             time.sleep(0.05)
             continue
-        
+
         if codec is None:
             codec = av.CodecContext.create("libx264", "w")
             codec.width = 960
@@ -695,25 +753,25 @@ def video_stream_server_reduced():
                 codec = None
                 time.sleep(1)
                 continue
-        
+
         with video_lock:
             if video_frame is None:
                 time.sleep(0.01)
                 continue
             frame = video_frame.copy()
-        
+
         try:
             av_frame = av.VideoFrame.from_ndarray(frame, format="bgr24")
             av_frame = av_frame.reformat(codec.width, codec.height, codec.pix_fmt)
             av_frame.pts = frame_count * 3000
-            
+
             if frame_count - last_keyframe >= 30:
                 av_frame.pict_type = av.video.frame.PictureType.I
                 last_keyframe = frame_count
-            
+
             frame_count += 1
             packets = codec.encode(av_frame)
-            
+
             for packet in packets:
                 data = bytes(packet)
                 if len(data) > 0:
@@ -725,12 +783,12 @@ def video_stream_server_reduced():
                         # Fragment into small packets
                         for i in range(0, len(data), MAX_DGRAM):
                             sock.sendto(data[i:i+MAX_DGRAM], addr)
-            
+
         except Exception as e:
             print(f"Video encoding error: {e}")
             codec = None
             continue
-        
+
         time.sleep(1 / 30)
 # --------------------
 # Main
