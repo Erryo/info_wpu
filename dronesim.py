@@ -114,9 +114,11 @@ stream_state = False
 
 mp_0 = MissionPad(Point3D(100,100,100,),vector=Point3D(1,0,0),id=0)
 mp_1 = MissionPad(Point3D(0,0,0,),vector=Point3D(1,0,0),id=1)
-mp_2 = MissionPad(Point3D(5,0,0,),vector=Point3D(0,0,1),id=2)
+mp_2 = MissionPad(Point3D(20,0,0,),vector=Point3D(0,0,1),id=2)
+mp_3 = MissionPad(Point3D(20,0,20,),vector=Point3D(-1,0,0),id=3)
+mp_4 = MissionPad(Point3D(0,0,20,),vector=Point3D(0,0,-1),id=4)
 
-mission_pads = [mp_0,mp_1,mp_2]
+mission_pads = [mp_0,mp_1,mp_2,mp_3,mp_4]
 mission_pads_on = False
 mission_pads_detection = 0
 default_speed = 1
@@ -233,7 +235,7 @@ def go_point_diagonal(point: Point3D,speed=default_speed):
     print("x:",drone_state["x"]," y:",drone_state["h"]," z:",drone_state["z"])
 
 def go_point_mid(p: Point3D,id: int,speed: int = default_speed):
-    mp = MissionPad(0,0,0,0)
+    mp = MissionPad(Point3D(0,0,0),Point3D(1,0,0),0)
     for pad in mission_pads:
         if pad.id == id :
             mp = pad
@@ -426,6 +428,12 @@ def handle_variable(cmd: str):
             print("mid Target is:",mid_2)
             go_point_mid(Point3D(x=x,y=h,z=z),mid_1,speed)
             go_point_mid(Point3D(x=0,y=h,z=0),mid_2,speed)
+            yaw_point= calc_yaw_point(drone_state["yaw"])     
+            mp = mission_pads[mid_2]             
+                                                              
+            angle_diff=calc_vector_angle(yaw_point,mp.vector) 
+            rotate_pid_delta(angle_diff,"yaw")
+            
 
 
 
@@ -602,7 +610,7 @@ def sim_loop(state: SimState):
         drone_cam.position = rl.Vector3(x, h, z)
         drone_cam.target   = rl.Vector3(x + rot_v[0], h, z + rot_v[1])
 
-        top_cam.position = rl.Vector3(x+1, h+15, z+1)
+        top_cam.position = rl.Vector3(x+1, h+30, z+1)
         top_cam.target   = rl.Vector3(x, h,z)
 
 
@@ -645,7 +653,6 @@ def sim_loop(state: SimState):
         rl.end_mode3d()
 
         yaw_point= calc_yaw_point(drone_state["yaw"])
-        print(f"mid:{drone_state['mid']}")
         mp = mission_pads[drone_state["mid"]]
 
         angle_diff=calc_vector_angle(yaw_point,mp.vector)
