@@ -35,8 +35,7 @@ while time.time() - start_time < 30:  # Show for 10 seconds
     else:
         print("No frame yet...")
     
-#    drone.rotate_clockwise(10)
-    rotate_clockwise_no_wait(drone,10)
+    drone.rotate_clockwise(10)
 
     # CRITICAL: waitKey is required for imshow to work!
     if cv2.waitKey(1) & 0xFF == ord('q'):

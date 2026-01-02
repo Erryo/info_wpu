@@ -49,6 +49,7 @@ def main():
     #keys = [False,False,False,False,False,False,False,False,False,False]
     angle,radius = 0,0
     start_time = time.time()
+    drone.enable_mission_pads()
 
     while not Should_quit:
         #time.sleep(0.1)

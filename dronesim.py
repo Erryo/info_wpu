@@ -11,6 +11,7 @@ import random
 import numpy as np
 import av
 import cv2
+import copy
 
 import datetime
 
@@ -81,10 +82,20 @@ class MissionPad :
     vector: Point3D# Vector from origin(of Pad) to Point3D
     id: int
 
-    def __init__(self,x,y,z,id) -> None:
-        self.origin = Point3D(x,y,z)
+    def __init__(self,origin: Point3D,vector:Point3D,id) -> None:
+        self.origin = origin
+        self.vector = vector
         self.id = id
-
+    def calc_target_point(self,origin=None)->Point3D:
+        if origin is None:
+            return Point3D(x=self.origin.x+self.vector.x,
+                           y=self.origin.y+self.vector.y,
+                           z=self.origin.z+self.vector.z)
+        
+        return Point3D(x=origin.x+self.vector.x, 
+                       y=origin.y+self.vector.y, 
+                       z=origin.z+self.vector.z) 
+        
 
 class SimState :
     def __init__(self) -> None:
@@ -101,10 +112,11 @@ class SimState :
 in_air = False
 stream_state = False
 
-mp_1 = MissionPad(0,0,0,1)
-mp_2 = MissionPad(4,0,4,2)
+mp_0 = MissionPad(Point3D(100,100,100,),vector=Point3D(1,0,0),id=0)
+mp_1 = MissionPad(Point3D(0,0,0,),vector=Point3D(1,0,0),id=1)
+mp_2 = MissionPad(Point3D(5,0,0,),vector=Point3D(0,0,1),id=2)
 
-mission_pads = [mp_1,mp_2]
+mission_pads = [mp_0,mp_1,mp_2]
 mission_pads_on = False
 mission_pads_detection = 0
 default_speed = 1
@@ -115,16 +127,16 @@ default_speed = 1
 state_lock = threading.Lock()
 
 def rc_dir(velocity:float,key:str):
-    distance = velocity * 0.001 
+    distance = velocity * 0.001
     target = drone_state[key]+distance
-    while True: 
+    while True:
         with state_lock:
             current_val = drone_state[key]
             if not reached_coord(current_val,target,0.06):
                 drone_state[key] += distance/10
-            else: 
+            else:
                 return
-    
+
 def rc_normal_2D(velocity: float,offset:int = 0):
     #TIME_BTW_RC_CONTROL_COMMANDS = 0.001  # in seconds
     # top speed: 100cm/s
@@ -136,7 +148,7 @@ def rc_normal_2D(velocity: float,offset:int = 0):
     # f = v * s = 60 fps * 0.001s = 0.06 frames
     # v = 1.667 cm/frame
 
-    distance = velocity * 0.001 
+    distance = velocity * 0.001
     target = calc_target_yaw(distance,offset)
     x_done = False
     y_done = False
@@ -149,12 +161,12 @@ def rc_normal_2D(velocity: float,offset:int = 0):
                 y_done= True
 
             if not reached_coord(drone_state['x'],target.x,0.06):
-                drone_state['x'] += distance/10 
+                drone_state['x'] += distance/10
             else:
                 x_done= True
 
             if not reached_coord(drone_state['z'],target.z,0.06):
-                drone_state['z'] += distance/10 
+                drone_state['z'] += distance/10
             else:
                 z_done= True
 
@@ -273,6 +285,32 @@ def rotate_pid_delta(target,key):
 def go_coord_delta(target,key: str):
     target = drone_state[key]+target
     go_coord(target=target,key=key)
+def calc_vector_angle(a: Point3D, b: Point3D) -> float:
+    magnitude_a = calc_magnitude(a)
+    magnitude_b = calc_magnitude(b)
+
+    if magnitude_a == 0 or magnitude_b == 0:
+        raise ValueError("Cannot compute angle with zero-length vector")
+
+    dot_prod = calc_dot_product(a, b)
+    cos_angle = dot_prod / (magnitude_a * magnitude_b)
+
+    # Clamp due to floating-point precision
+    cos_angle = max(-1.0, min(1.0, cos_angle))
+
+    return math.degrees(math.acos(cos_angle))
+
+def calc_dot_product(a:Point3D,b:Point3D) -> float :
+    return (a.x*b.x +
+        a.y*b.y +
+        a.z*b.z)
+
+def calc_magnitude(v:Point3D) -> float:
+    return math.sqrt(v.x**2+v.y**2+v.z**2)
+
+def calc_yaw_point(yaw=drone_state["yaw"]):
+    yaw = yaw*(math.pi/180) # convert to rad
+    return Point3D(x=math.cos(yaw),y=0,z=math.sin(yaw))
 
 def calc_rotation_vector(yaw=drone_state["yaw"]): # aka. i_vectior
     yaw = yaw*(math.pi/180)
@@ -375,6 +413,20 @@ def handle_variable(cmd: str):
                 mid=int(strs[5].removeprefix("m"))
                 print("mid is:",mid)
                 go_point_mid(Point3D(x=x,y=h,z=z),mid,speed)
+        case "jump":
+            x= int(strs[1]) #x in tello coord
+            z= int(strs[2]) #y 
+            h= int(strs[3]) #z
+            print("jumping:x",x," y",h," z:",z)
+            speed= int(strs[4])
+            yaw = int(strs[5])
+            mid_1=int(strs[6].removeprefix("m"))
+            mid_2=int(strs[7].removeprefix("m"))
+            print("mid is:",mid_1)
+            print("mid Target is:",mid_2)
+            go_point_mid(Point3D(x=x,y=h,z=z),mid_1,speed)
+            go_point_mid(Point3D(x=0,y=h,z=0),mid_2,speed)
+
 
 
     return b"ok"
@@ -494,6 +546,9 @@ def draw_world(state:SimState):
 
         for mp in mission_pads:
             rl.draw_model(state.model_mp,mp.origin.to_vector(),1,rl.RED)
+            origin = copy.copy(mp.origin)
+            origin.y += 0.2
+            rl.draw_line3d(origin.to_vector(),mp.calc_target_point(origin).to_vector(),rl.BLUE)
 
         rl.draw_model(state.model_cube,rl.Vector3(10,1,0),1,rl.RED)
         rl.draw_model(state.model_cube,rl.Vector3(-10,1,0),1,rl.BLUE)
@@ -547,7 +602,7 @@ def sim_loop(state: SimState):
         drone_cam.position = rl.Vector3(x, h, z)
         drone_cam.target   = rl.Vector3(x + rot_v[0], h, z + rot_v[1])
 
-        top_cam.position = rl.Vector3(x+1, h+25, z+1)
+        top_cam.position = rl.Vector3(x+1, h+15, z+1)
         top_cam.target   = rl.Vector3(x, h,z)
 
 
@@ -588,9 +643,17 @@ def sim_loop(state: SimState):
         draw_world(state)
 
         rl.end_mode3d()
-        rl.draw_text(f"x:{round(drone_state['x'],3)};h:{round(drone_state['h'],3)};z:{round(drone_state['z'],3)}",0,0,24,rl.RED)
-        rl.end_drawing()
 
+        yaw_point= calc_yaw_point(drone_state["yaw"])
+        print(f"mid:{drone_state['mid']}")
+        mp = mission_pads[drone_state["mid"]]
+
+        angle_diff=calc_vector_angle(yaw_point,mp.vector)
+        rl.draw_text(f"x:{round(drone_state['x'],3)};h:{round(drone_state['h'],3)};z:{round(drone_state['z'],3)};yaw:{round(drone_state['yaw'],3)};diff:{round(angle_diff,3)}",0,0,24,rl.RED) 
+        rl.draw_text(f"mid:{drone_state['mid']}",0,30,24,rl.RED) 
+#        rl.draw_text(f"mp_1.v: x:{round(mp.vector.x,3)}; y: {round(mp.vector.y,3)}; z: {round(mp.vector.z,3)}",0,30,24,rl.RED) 
+#        rl.draw_text(f"yaw.v: x:{round(yaw_point.x,3)}; y: {round(yaw_point.y,3)}; z: {round(yaw_point.z,3)}",0,70,24,rl.RED) 
+        rl.end_drawing()
     rl.close_window()
 
 def video_stream_server(): # Thanks ClaudeAI!!!!!!!!!!!!!    :)))))))))))

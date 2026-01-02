@@ -1,7 +1,7 @@
 from djitellopy import tello
 import time
 
-drone = tello.Tello()
+drone = tello.Tello(host="127.0.0.1")
 
 
 def center_over_pad(pad):
@@ -20,13 +20,17 @@ print("Batterie:", drone.get_battery(), "%")
 
 
 
-# Mission Pads aktivieren
-drone.enable_mission_pads()
-drone.set_mission_pad_detection_direction(0)  # 2 = beide
+
+
+
 
 # Start
 drone.takeoff()
 time.sleep(1)
+
+# Mission Pads aktivieren                                 
+drone.enable_mission_pads()                               
+drone.set_mission_pad_detection_direction(0)  # 2 = beide 
 
 print("Warten auf Mission Pad 1 ...")
 pad = drone.get_mission_pad_id()
