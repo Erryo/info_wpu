@@ -343,7 +343,7 @@ def handle_variable(cmd: str):
                 yaw= int(strs[4])
 
                 if yaw != 0:
-                    rc_dir(yaw,"yaw")
+                    rc_dir(yaw*10,"yaw")
 #                    rotate_pid_delta(yaw,"yaw")
                 #forward
                 if forward_back != 0:
