@@ -21,13 +21,14 @@ def get_pad_position():
 def polygon_area_from_vectors(vectors):
     # Reconstruct vertices
     x, y = 0, 0
-    vertices = [(x, y)] # die Koordinaten der Ecken des Vieleckes
+    vertices = [(x, y)] # die Koordinaten der Ecken des Vieleck
     
     # Berechne die Ecken
     for dx, dy in vectors:
         x += dx
         y += dy
         vertices.append((x, y))
+    print("Vertices:",vertices)
     
     # Shoelace formula aka. Gaußsche Trapezformel
     # NOTE: Ich verstehe diese Formel nicht, siehe dazu https://de.wikipedia.org/wiki/Gau%C3%9Fsche_Trapezformel
@@ -76,7 +77,7 @@ side_vectors=[] #  Vektoren, die zu den jeweiligen Seite von der letzte Seite f�
 # Endlosschleife bis Pad 1 erneut kommt
 while True:
     # Schrittweise vorwärts fliegen
-    drone.move_forward(20)
+    drone.move_forward(50)
     time.sleep(0.5)
 
     # Aktuelles Pad abfragen
@@ -85,8 +86,10 @@ while True:
     # Aktueller Abstand zum Pad
     dist_current_pad = get_pad_position()
     print(dist_current_pad)
+
+    # Hier entsprechen Pads den Ecken des Vieleck
     
-    # Nachdem ein neuer pad gefunden wurde,
+    # Nachdem ein neuer Pad gefunden wurde,
     # speichere die Steigung der neuer Seite
     if dist_pad == (0,0):
         print("Reseting the step_2d")

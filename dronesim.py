@@ -117,16 +117,26 @@ in_air = False
 stream_state = False
 
 mp_0 = MissionPad(Point3D(1000,1000,1000,),vector=Point3D(1,0,0),id=0)
-mp_1 = MissionPad(Point3D(0,0,0,),vector=Point3D(1,0,0),id=1)
-mp_2 = MissionPad(Point3D(100,0,0,),vector=Point3D(0,0,1),id=2)
-mp_3 = MissionPad(Point3D(100,0,100,),vector=Point3D(-1,0,0),id=3)
-mp_4 = MissionPad(Point3D(0,0,100,),vector=Point3D(0,0,-1),id=4)
+#mp_1 = MissionPad(Point3D(0,0,0,),vector=Point3D(1,0,0),id=1)
+#mp_2 = MissionPad(Point3D(100,0,0,),vector=Point3D(0,0,1),id=2)
+#mp_3 = MissionPad(Point3D(100,0,100,),vector=Point3D(-1,0,0),id=3)
+#mp_4 = MissionPad(Point3D(0,0,100,),vector=Point3D(0,0,-1),id=4)
 
-old_mid = -1
-mission_pads = [mp_0,mp_1,mp_2,mp_3,mp_4]
+# Vertex 1 (origin)
+mp_1 = MissionPad(Point3D(0, 0, 0), vector=Point3D(1, 0, 0), id=1)
+
+# Vertex 2 (along x-axis)
+mp_2 = MissionPad(Point3D(100, 0, 0), vector=Point3D(-0.5, 0, 1), id=2)
+
+# Vertex 3 (forming the triangle)
+mp_3 = MissionPad(Point3D(50, 0, 100), vector=Point3D(-0.5, 0, -1), id=3)
+
+mission_pads = [mp_0,mp_1,mp_2,mp_3]
 mission_pads_on = False
 mission_pads_detection = 0
 default_speed = 1
+
+old_mid = -1
 
 
 
@@ -709,7 +719,7 @@ def sim_loop(state: SimState):
         drone_cam.position = rl.Vector3(x, h, z)
         drone_cam.target   = rl.Vector3(x + rot_v[0], h, z + rot_v[1])
 
-        top_cam.position = rl.Vector3(x+4, h+100, z+4)
+        top_cam.position = rl.Vector3(x+4, h+200, z+4)
         top_cam.target   = rl.Vector3(x, h,z)
 
 
