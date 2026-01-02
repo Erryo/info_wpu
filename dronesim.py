@@ -31,7 +31,7 @@ CLIENT_IP = "127.0.0.1"
 TIME_OUT=15 #s
 
 
-DRONE_SIZE = 0.5
+DRONE_SIZE = 8
 
 
 
@@ -43,8 +43,12 @@ last_keep_alive = time.perf_counter()
 # Shared drone state
 # --------------------
 drone_state = {
+    "absx": 0,
+    "absh": 0,
+    "absz": 0,
     "x": 0,
     "h": 0,
+    "y": 0,
     "z": 0,
     "pitch": 0,
     "roll": 0,
@@ -86,16 +90,16 @@ class MissionPad :
         self.origin = origin
         self.vector = vector
         self.id = id
-    def calc_target_point(self,origin=None)->Point3D:
+    def calc_target_point(self,amount:float=1,origin=None)->Point3D:
         if origin is None:
-            return Point3D(x=self.origin.x+self.vector.x,
-                           y=self.origin.y+self.vector.y,
-                           z=self.origin.z+self.vector.z)
-        
-        return Point3D(x=origin.x+self.vector.x, 
-                       y=origin.y+self.vector.y, 
-                       z=origin.z+self.vector.z) 
-        
+            return Point3D(x=self.origin.x+self.vector.x*amount,
+                           y=self.origin.y+self.vector.y*amount,
+                           z=self.origin.z+self.vector.z*amount)
+
+        return Point3D(x=origin.x+self.vector.x*amount,
+                       y=origin.y+self.vector.y*amount,
+                       z=origin.z+self.vector.z*amount)
+
 
 class SimState :
     def __init__(self) -> None:
@@ -105,19 +109,20 @@ class SimState :
         self.mesh_cube = rl.gen_mesh_cube(0.7,1,1)
         self.model_cube = rl.load_model_from_mesh(self.mesh_cube)
 
-        self.mesh_mission_pad = rl.gen_mesh_cube(DRONE_SIZE,0.1,0.5)
+        self.mesh_mission_pad = rl.gen_mesh_cube(DRONE_SIZE,1,DRONE_SIZE)
         self.model_mp = rl.load_model_from_mesh(self.mesh_mission_pad)
         self.frame = []
 
 in_air = False
 stream_state = False
 
-mp_0 = MissionPad(Point3D(100,100,100,),vector=Point3D(1,0,0),id=0)
+mp_0 = MissionPad(Point3D(1000,1000,1000,),vector=Point3D(1,0,0),id=0)
 mp_1 = MissionPad(Point3D(0,0,0,),vector=Point3D(1,0,0),id=1)
-mp_2 = MissionPad(Point3D(20,0,0,),vector=Point3D(0,0,1),id=2)
-mp_3 = MissionPad(Point3D(20,0,20,),vector=Point3D(-1,0,0),id=3)
-mp_4 = MissionPad(Point3D(0,0,20,),vector=Point3D(0,0,-1),id=4)
+mp_2 = MissionPad(Point3D(100,0,0,),vector=Point3D(0,0,1),id=2)
+mp_3 = MissionPad(Point3D(100,0,100,),vector=Point3D(-1,0,0),id=3)
+mp_4 = MissionPad(Point3D(0,0,100,),vector=Point3D(0,0,-1),id=4)
 
+old_mid = -1
 mission_pads = [mp_0,mp_1,mp_2,mp_3,mp_4]
 mission_pads_on = False
 mission_pads_detection = 0
@@ -128,6 +133,39 @@ default_speed = 1
 
 state_lock = threading.Lock()
 
+
+def draw_thick_line_3d(start: rl.Vector3,
+                       end: rl.Vector3,
+                       thickness: float = 0.05,
+                       color = rl.BLUE,
+                       sides: int = 8):
+    """
+    Draws a thick 3D line using a cylinder.
+
+    start, end : rl.Vector3
+        Line endpoints
+    thickness : float
+        Radius of the line
+    color :
+        raylib color
+    sides : int
+        Cylinder resolution (6–12 is usually enough)
+    """
+
+    # Avoid zero-length lines
+    direction = rl.vector3_subtract(end, start)
+    length = rl.vector3_length(direction)
+    if length <= 0.00001:
+        return
+
+    rl.draw_cylinder_ex(
+        start,
+        end,
+        thickness,
+        thickness,
+        sides,
+        color
+    )
 def rc_dir(velocity:float,key:str):
     distance = velocity * 0.001
     target = drone_state[key]+distance
@@ -157,18 +195,18 @@ def rc_normal_2D(velocity: float,offset:int = 0):
     z_done = False
     while not ( x_done and y_done and z_done) :
         with state_lock:
-            if not reached_coord(drone_state['h'],target.y,0.06):
-                drone_state['h'] += distance/10
+            if not reached_coord(drone_state['absh'],target.y,0.06):
+                drone_state['absh'] += distance/10
             else:
                 y_done= True
 
-            if not reached_coord(drone_state['x'],target.x,0.06):
-                drone_state['x'] += distance/10
+            if not reached_coord(drone_state['absx'],target.x,0.06):
+                drone_state['absx'] += distance/10
             else:
                 x_done= True
 
-            if not reached_coord(drone_state['z'],target.z,0.06):
-                drone_state['z'] += distance/10
+            if not reached_coord(drone_state['absz'],target.z,0.06):
+                drone_state['absz'] += distance/10
             else:
                 z_done= True
 
@@ -194,45 +232,43 @@ def go_coord(target,key,speed = default_speed):
 
 
 def go_point_diagonal(point: Point3D,speed=default_speed):
+ #   print(f"PID DIAG TARGET x: {point.x}; y: {point.y}; z:{point.z}")
     pid_x = ctrl.PIDControler(point.x,1/70,0,0,0.1)
     pid_h = ctrl.PIDControler(point.y,1/70,0,0,0.1)
     pid_z = ctrl.PIDControler(point.z,1/70,0,0,0.1)
 
-    numb_pids_done = 0
     x_done = False
     y_done = False
     z_done = False
-    while numb_pids_done <3:
+    while not(x_done and  y_done and  z_done):
         with state_lock:
-            if not pid_x.reached_setpoint(drone_state["x"]):
-                value = pid_x.compute(drone_state["x"])
+            if not pid_x.reached_setpoint(drone_state["absx"]):
+                value = pid_x.compute(drone_state["absx"])
                 variability = random.uniform(0.9,1.1)
                 value *= variability*speed
-                drone_state["x"] += value
+                drone_state["absx"] += value
             elif not x_done:
-                numb_pids_done += 1
                 x_done = True
 
-            if not pid_h.reached_setpoint(drone_state["h"]):
-                value = pid_h.compute(drone_state["h"])
+            if not pid_h.reached_setpoint(drone_state["absh"]):
+                value = pid_h.compute(drone_state["absh"])
                 variability = random.uniform(0.9,1.1)
                 value *= variability*speed
-                drone_state["h"] += value
+                drone_state["absh"] += value
             elif not y_done:
-                numb_pids_done += 1
                 y_done = True
 
-            if not pid_z.reached_setpoint(drone_state["z"]):
-                value = pid_z.compute(drone_state["z"])
+            if not pid_z.reached_setpoint(drone_state["absz"]):
+                value = pid_z.compute(drone_state["absz"])
                 variability = random.uniform(0.9,1.1)
                 value *= variability*speed
-                drone_state["z"] += value
+                drone_state["absz"] += value
             elif not z_done:
-                numb_pids_done += 1
+                z_done = True
 
         time.sleep(random.uniform(0.003,0.009))
 
-    print("x:",drone_state["x"]," y:",drone_state["h"]," z:",drone_state["z"])
+#    print("PID DIAG DONE: x:",drone_state["absx"]," y:",drone_state["absh"]," z:",drone_state["absz"])
 
 def go_point_mid(p: Point3D,id: int,speed: int = default_speed):
     mp = MissionPad(Point3D(0,0,0),Point3D(1,0,0),0)
@@ -242,21 +278,21 @@ def go_point_mid(p: Point3D,id: int,speed: int = default_speed):
 
     x,h,z = mp.origin.x,mp.origin.y,mp.origin.z
     target = Point3D(x=p.x+x,y=p.y+h,z=p.z+z)
-    print("target is x:",target.x," y:",target.y," z:",target.z)
+    #print("target is x:",target.x," y:",target.y," z:",target.z)
     go_point_diagonal(target,speed)
 
 
 # Relative to drone
 def go_point_diagonal_delta(p: Point3D,speed=default_speed):
-    x,h,z = drone_state["x"],drone_state["h"],drone_state["z"]
+    x,h,z = drone_state["absx"],drone_state["absh"],drone_state["absz"]
     target = Point3D(x=p.x+x,y=p.y+h,z=p.z+z)
-    print("target is x:",target.x," y:",target.y," z:",target.z)
+    #print("target is x:",target.x," y:",target.y," z:",target.z)
     go_point_diagonal(target,speed)
 
 
 
 def calc_target_yaw(amount,yaw_offset=0):
-    x,h,z = drone_state["x"],drone_state["h"],drone_state["z"]
+    x,h,z = drone_state["absx"],drone_state["absh"],drone_state["absz"]
     i_vector = calc_rotation_vector(drone_state["yaw"]+yaw_offset)
     target_delta = Point3D(i_vector[0]*amount,y=h,z=i_vector[1]*amount)
     target = Point3D(target_delta.x+x,h,target_delta.z+z)
@@ -319,30 +355,48 @@ def calc_rotation_vector(yaw=drone_state["yaw"]): # aka. i_vectior
     return [math.cos(yaw),math.sin(yaw)]
 
 def detect_mission_pad_underneath() :
+    global old_mid
+
+    if drone_state["mid"] != -1:
+        old_mid = drone_state["mid"]
+
     drone_state["mid"] = -1
     for pad in mission_pads:
         if aabb_2d_check(pad):
             drone_state["mid"] = pad.id
 
+def detect_mission_pad_both() :   
+    global old_mid
+
+    if drone_state["mid"] != -1:
+        old_mid = drone_state["mid"]
+
+    drone_state["mid"] = -1             
+    for pad in mission_pads:            
+        if aabb_2d_check(pad,DRONE_SIZE):          
+            drone_state["mid"] = pad.id 
+
 def aabb_2d_check(
     pad: MissionPad,
+    extension: int = 0,
 ) -> bool:
     """
     2D AABB collision check on X-Z plane.
     Height (Y) is ignored.
     """
-    drone_pos = Point3D(drone_state["x"],
-                        drone_state["h"],
-                        drone_state["z"],
+    drone_pos = Point3D(drone_state["absx"],
+                        drone_state["absh"],
+                        drone_state["absz"],
     )
-
+    half_size = DRONE_SIZE / 2
+    detection_radius = half_size + DRONE_SIZE + extension
 
     dx = abs(drone_pos.x - pad.origin.x)
     dz = abs(drone_pos.z - pad.origin.z)
 
     return (
-        dx <= (DRONE_SIZE/2 + DRONE_SIZE) and
-        dz <= (DRONE_SIZE/2 + DRONE_SIZE)
+        dx <= detection_radius and
+        dz <= detection_radius
     )
 
 
@@ -361,9 +415,9 @@ def handle_variable(cmd: str):
             with state_lock:
                 default_speed = x
         case "up":
-            go_coord_delta(x,"h")
+            go_coord_delta(x,"absh")
         case "down":
-            go_coord_delta(-x,"h")
+            go_coord_delta(-x,"absh")
         case "forward":
             go_normal_2D(x)
         case "back":
@@ -394,7 +448,7 @@ def handle_variable(cmd: str):
                     rc_normal_2D(left_right,90)
                     #go_normal_2D(left_right,90)
                 if up_down != 0:
-                    rc_dir(up_down,"h")
+                    rc_dir(up_down,"absh")
                     #go_coord_delta(up_down,"h")
 
 
@@ -417,7 +471,7 @@ def handle_variable(cmd: str):
                 go_point_mid(Point3D(x=x,y=h,z=z),mid,speed)
         case "jump":
             x= int(strs[1]) #x in tello coord
-            z= int(strs[2]) #y 
+            z= int(strs[2]) #y
             h= int(strs[3]) #z
             print("jumping:x",x," y",h," z:",z)
             speed= int(strs[4])
@@ -428,21 +482,45 @@ def handle_variable(cmd: str):
             print("mid Target is:",mid_2)
             go_point_mid(Point3D(x=x,y=h,z=z),mid_1,speed)
             go_point_mid(Point3D(x=0,y=h,z=0),mid_2,speed)
-            yaw_point= calc_yaw_point(drone_state["yaw"])     
-            mp = mission_pads[mid_2]             
-                                                              
-            angle_diff=calc_vector_angle(yaw_point,mp.vector) 
+            yaw_point= calc_yaw_point(drone_state["yaw"])
+            mp = mission_pads[mid_2]
+
+            angle_diff=calc_vector_angle(yaw_point,mp.vector)
             rotate_pid_delta(angle_diff,"yaw")
-            
+
 
 
 
     return b"ok"
 
 
+def update_relative_coords():
+    global old_mid
+    if mission_pads_on:
+        if drone_state["mid"] == -1 and old_mid != -1:
+            print("Case 1")
+            mp = mission_pads[old_mid]                
+            drone_state["x"] = drone_state["absx"] - mp.origin.x
+            drone_state["z"] = drone_state["absh"] - mp.origin.y
+            drone_state["h"] = drone_state["absh"] - mp.origin.y
+            drone_state["y"] = drone_state["absz"] - mp.origin.z
+            return
+        elif drone_state["mid"] != -1:
+            print("Case 2")
+            mp = mission_pads[drone_state["mid"]]
+            drone_state["x"] = drone_state["absx"] - mp.origin.x 
+            drone_state["z"] = drone_state["absh"] - mp.origin.y 
+            drone_state["h"] = drone_state["absh"] - mp.origin.y 
+            drone_state["y"] = drone_state["absz"] - mp.origin.z 
+            return                                               
 
 
-
+    print("Case 3")
+    drone_state["x"] = drone_state["absx"] 
+    drone_state["z"] = drone_state["absh"] 
+    drone_state["h"] = drone_state["absh"] 
+    drone_state["y"] = drone_state["absz"] 
+    return
 
 
 # --------------------
@@ -468,7 +546,7 @@ def command_server():
                 if in_air:
                     sock.sendto(b"error", addr)
                     return
-                go_coord(4,'h')
+                go_coord(30,'absh')
                 with state_lock:
                     in_air = True
                 sock.sendto(b"ok", addr)
@@ -497,13 +575,14 @@ def command_server():
                 if not in_air:
                       sock.sendto(b"error", addr)
                       return
-                go_coord(0,'h')
+                go_coord(0,'absh')
                 with state_lock:
                     in_air = False
                 sock.sendto(b"ok", addr)
             case _:
                 res = handle_variable(cmd)
                 sock.sendto(res, addr)
+        update_relative_coords()
 
 def i(v):
     return int(round(v))
@@ -517,10 +596,12 @@ def state_server():
 
     print("State server sending on UDP 8890")
 
+
     while True:
         with state_lock:
             state_str = (
                 f"x:{i(drone_state['x'])};"
+                f"y:{i(drone_state['y'])};"
                 f"h:{i(drone_state['h'])};"
                 f"z:{i(drone_state['z'])};"
                 f"pitch:{i(drone_state['pitch'])};"
@@ -544,19 +625,32 @@ def state_server():
         sock.sendto(state_str.encode(), (CLIENT_IP, STATE_PORT_drone))
         time.sleep(0.1)  # 10 Hz (matches real Tello)
 
-def draw_world(state:SimState):
-        x,h,z = drone_state['x'],drone_state['h'],drone_state['z']
-        t = calc_target_yaw(2)
-        rl.draw_grid(60,1)
-        rl.draw_model(state.model_drone,rl.Vector3(x,h,z),1,rl.BLUE)
+def draw_world(state:SimState,debug=False):
+        x,h,z = drone_state['absx'],drone_state['absh'],drone_state['absz']
+        t = calc_target_yaw(8)
+        rl.draw_grid(60,10)
 
-        rl.draw_line3d(rl.Vector3(x,h,z),rl.Vector3(t.x,h,t.z),rl.RED)
+        if debug:
+            rl.draw_model(state.model_drone,rl.Vector3(x,h,z),1,rl.BLUE)
+            draw_thick_line_3d(
+            rl.Vector3(x,h,z),
+            rl.Vector3(t.x,h,t.z),
+            thickness=0.4,
+            color = rl.RED
+             )
 
         for mp in mission_pads:
             rl.draw_model(state.model_mp,mp.origin.to_vector(),1,rl.RED)
-            origin = copy.copy(mp.origin)
-            origin.y += 0.2
-            rl.draw_line3d(origin.to_vector(),mp.calc_target_point(origin).to_vector(),rl.BLUE)
+
+            if debug:
+                origin = copy.copy(mp.origin)
+                origin.y += 0.2
+                draw_thick_line_3d(
+                    origin.to_vector(),
+                    mp.calc_target_point(8,origin).to_vector(),
+                    thickness=0.3,
+                    color=rl.BLUE
+                )
 
         rl.draw_model(state.model_cube,rl.Vector3(10,1,0),1,rl.RED)
         rl.draw_model(state.model_cube,rl.Vector3(-10,1,0),1,rl.BLUE)
@@ -593,7 +687,12 @@ def sim_loop(state: SimState):
 #                in_air = False
 #
         if mission_pads_on:
-            detect_mission_pad_underneath()
+            if mission_pads_detection == 0:
+                detect_mission_pad_underneath()
+            elif mission_pads_detection == 2:
+                detect_mission_pad_both()
+            else:
+                detect_mission_pad_underneath()
 
         ## Sim log:wic
         if rl.is_key_pressed(rl.KEY_ENTER) and not rl.is_key_pressed_repeat(rl.KEY_ENTER):
@@ -604,13 +703,13 @@ def sim_loop(state: SimState):
                 pov = drone_cam
 
 
-        x,h,z = drone_state['x'],drone_state['h'],drone_state['z']
+        x,h,z = drone_state['absx'],drone_state['absh'],drone_state['absz']
         rot_v = calc_rotation_vector(drone_state["yaw"])
 
         drone_cam.position = rl.Vector3(x, h, z)
         drone_cam.target   = rl.Vector3(x + rot_v[0], h, z + rot_v[1])
 
-        top_cam.position = rl.Vector3(x+1, h+30, z+1)
+        top_cam.position = rl.Vector3(x+4, h+100, z+4)
         top_cam.target   = rl.Vector3(x, h,z)
 
 
@@ -619,7 +718,7 @@ def sim_loop(state: SimState):
         rl.clear_background(rl.WHITE)
 
         rl.begin_mode3d(drone_cam)
-        draw_world(state)
+        draw_world(state,False)
         rl.end_mode3d()
 
         rl.end_texture_mode()
@@ -648,7 +747,7 @@ def sim_loop(state: SimState):
 
         rl.begin_mode3d(pov)
 
-        draw_world(state)
+        draw_world(state,True)
 
         rl.end_mode3d()
 
@@ -656,10 +755,10 @@ def sim_loop(state: SimState):
         mp = mission_pads[drone_state["mid"]]
 
         angle_diff=calc_vector_angle(yaw_point,mp.vector)
-        rl.draw_text(f"x:{round(drone_state['x'],3)};h:{round(drone_state['h'],3)};z:{round(drone_state['z'],3)};yaw:{round(drone_state['yaw'],3)};diff:{round(angle_diff,3)}",0,0,24,rl.RED) 
-        rl.draw_text(f"mid:{drone_state['mid']}",0,30,24,rl.RED) 
-#        rl.draw_text(f"mp_1.v: x:{round(mp.vector.x,3)}; y: {round(mp.vector.y,3)}; z: {round(mp.vector.z,3)}",0,30,24,rl.RED) 
-#        rl.draw_text(f"yaw.v: x:{round(yaw_point.x,3)}; y: {round(yaw_point.y,3)}; z: {round(yaw_point.z,3)}",0,70,24,rl.RED) 
+        rl.draw_text(f"x:{round(drone_state['absx'],3)};h:{round(drone_state['absh'],3)};z:{round(drone_state['absz'],3)};yaw:{round(drone_state['yaw'],3)};diff:{round(angle_diff,3)}",0,0,24,rl.RED)
+        rl.draw_text(f"mid:{drone_state['mid']}",0,30,24,rl.RED)
+#        rl.draw_text(f"mp_1.v: x:{round(mp.vector.x,3)}; y: {round(mp.vector.y,3)}; z: {round(mp.vector.z,3)}",0,30,24,rl.RED)
+#        rl.draw_text(f"yaw.v: x:{round(yaw_point.x,3)}; y: {round(yaw_point.y,3)}; z: {round(yaw_point.z,3)}",0,70,24,rl.RED)
         rl.end_drawing()
     rl.close_window()
 
