@@ -1,0 +1,44 @@
+{
+    "v2   960 720 brown 0.85": {
+        "projection_type": "brown",
+        "width": 960,
+        "height": 720,
+        "focal_x": 0.85,
+        "focal_y": 0.85,
+        "c_x": 0.0,
+        "c_y": 0.0,
+        "k1": 0.0,
+        "k2": 0.0,
+        "p1": 0.0,
+        "p2": 0.0,
+        "k3": 0.0
+    },
+    "v2   400 300 brown 0.85": {
+        "projection_type": "brown",
+        "width": 400,
+        "height": 300,
+        "focal_x": 0.85,
+        "focal_y": 0.85,
+        "c_x": 0.0,
+        "c_y": 0.0,
+        "k1": 0.0,
+        "k2": 0.0,
+        "p1": 0.0,
+        "p2": 0.0,
+        "k3": 0.0
+    },
+    "v2   300 400 brown 0.85": {
+        "projection_type": "brown",
+        "width": 300,
+        "height": 400,
+        "focal_x": 0.85,
+        "focal_y": 0.85,
+        "c_x": 0.0,
+        "c_y": 0.0,
+        "k1": 0.0,
+        "k2": 0.0,
+        "p1": 0.0,
+        "p2": 0.0,
+        "k3": 0.0
+    }
+}
