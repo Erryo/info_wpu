@@ -1,11 +1,13 @@
 from djitellopy import tello
 import time
+import os
 
 drone = tello.Tello()
 
 
 def center_over_pad(pad):
-    drone.go_xyz_speed_yaw_mid(0,0,20,20,0,pad,pad)
+#    drone.go_xyz_speed_mid(130,0,20,50,0,pad,pad+1)
+    drone.go_xyz_speed_mid(0,0,30,20,pad)
 
 
 def get_pad_position():
@@ -57,10 +59,19 @@ time.sleep(1)
 
 # Mission Pads aktivieren                                 
 drone.enable_mission_pads()                               
-drone.set_mission_pad_detection_direction(0)  # 2 = beide 
+drone.set_mission_pad_detection_direction(2)  # 2 = beide 
+
+drone.get_mission_pad_id()
+drone.get_mission_pad_id()
 
 print("Warten auf Mission Pad 1 ...")
 pad = drone.get_mission_pad_id()
+start_pad = pad
+if start_pad <=0 :
+    print(f"EXIT due to mid = {start_pad}")
+    drone.land()
+    os._exit(1)
+#visited_pads = [pad]
 print(f"Pad {pad} erkannt!")
 
 
@@ -74,9 +85,11 @@ print("Starte Vorwärts-Navigation...\n")
 
 side_vectors=[] #  Vektoren, die zu den jeweiligen Seite von der letzte Seite führen
 # Endlosschleife bis Pad 1 erneut kommt
+dist_flown = 50
 while True:
     # Schrittweise vorwärts fliegen
-    drone.move_forward(50)
+    drone.go_xyz_speed_mid(dist_flown,0,50,30,last_pad)
+    dist_flown += 50
     time.sleep(0.5)
 
     # Aktuelles Pad abfragen
@@ -84,22 +97,17 @@ while True:
 
     # Aktueller Abstand zum Pad
     dist_current_pad = get_pad_position()
-    print(dist_current_pad)
+    print(f"Entfernung zum Pad {pad} ist: {dist_current_pad}" )
 
     # Hier entsprechen Pads den Ecken des Vieleck
     
     # Nachdem ein neuer Pad gefunden wurde,
     # speichere die Steigung der neuer Seite
-    if dist_pad == (0,0):
-        print("Reseting the step_2d")
-        step_2d = dist_current_pad
 
     # Wenn kein Pad gefunden wurde,
     # aktualisiere den Abstand zum Pad
-    if pad == -1:
-        dist_pad=dist_current_pad 
 
-    elif pad != -1:   # Ein Pad wurde erkannt
+    if pad != -1:   # Ein Pad wurde erkannt
         print(f"Mission Pad erkannt: {pad}")
 
         # Man konnte warscheinlich die If-Bedingung weglassen,
@@ -111,22 +119,25 @@ while True:
             # und muss berechnet werden.
             # + step_2d macht genau das.
             # - dist_current_pad[0] falls die Drohne nicht genau auf dem neuen Pad steht
-            dist_pad = dist_pad[0] - dist_current_pad[0]+step_2d[0], dist_pad[1] - dist_current_pad[1]+step_2d[1]
-            print("Side done with len:",dist_pad)
+            dist_flown -= drone.get_mission_pad_distance_x()
+            print(f"debug:{drone.get_mission_pad_distance_x()}")
+            print("Side done with len:",dist_flown)
+            
             # speichere den neun Vektor
             side_vectors.append(dist_pad)
             dist_pad = (0,0)
+            dist_flown = 0
+            center_over_pad(pad)
             
 
         # Wenn wieder Pad 1 → landen
-        if pad == 1 and last_pad != 1:
-            print("Pad 1 erneut erreicht → Landen...")
+        if pad == start_pad and last_pad != start_pad:
+            print(f"Pad {start_pad} erneut erreicht → Landen...")
             center_over_pad(pad)
             drone.land()
             break
 
         # Über dem Pad ausrichten
-        center_over_pad(pad)
 
         last_pad = pad
 
