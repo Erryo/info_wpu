@@ -1,8 +1,7 @@
-from typing import Tuple
 from djitellopy import tello
 import time
 
-drone = tello.Tello(host="127.0.0.1")
+drone = tello.Tello()
 
 
 def center_over_pad(pad):
