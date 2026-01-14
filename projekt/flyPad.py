@@ -3,7 +3,6 @@ import time
 
 drone = tello.Tello()
 
-
 def center_over_pad(pad):
     drone.go_xyz_speed_mid(0,0,20,20,pad)
     yaw = drone.get_yaw()
